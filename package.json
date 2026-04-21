@@ -1,0 +1,29 @@
+{
+  "name": "ipe-gov",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.26.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "compile": "turbo run compile",
+    "deploy:sepolia": "turbo run deploy:sepolia"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "keccak",
+      "lightningcss",
+      "secp256k1"
+    ]
+  }
+}

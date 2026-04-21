@@ -1,0 +1,20 @@
+node_modules/
+.turbo/
+dist/
+.output/
+.vinxi/
+.nitro/
+.DS_Store
+.env
+.env.local
+.env.*.local
+*.log
+
+# contracts
+artifacts/
+cache/
+coverage/
+coverage.json
+types/
+fhevmTemp/
+typechain-types/
