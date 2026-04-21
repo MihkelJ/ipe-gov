@@ -32,7 +32,6 @@ async function mineBlocks(n: number) {
 }
 
 describe("UnlockConfidentialGovernor", function () {
-  let deployer: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
   let carol: HardhatEthersSigner;
@@ -42,7 +41,8 @@ describe("UnlockConfidentialGovernor", function () {
   let governorAddress: string;
 
   before(async function () {
-    [deployer, alice, bob, carol, outsider] = await ethers.getSigners();
+    const signers = await ethers.getSigners();
+    [, alice, bob, carol, outsider] = signers;
   });
 
   beforeEach(async function () {
@@ -74,9 +74,10 @@ describe("UnlockConfidentialGovernor", function () {
   it("rejects non-member votes", async function () {
     await (await governor.connect(alice).propose("p1")).wait();
     const enc = await encryptSupport(governorAddress, outsider.address, 1);
-    await expect(
-      governor.connect(outsider).castVote(1, enc.handles[0], enc.inputProof),
-    ).to.be.revertedWithCustomError(governor, "NotMember");
+    await expect(governor.connect(outsider).castVote(1, enc.handles[0], enc.inputProof)).to.be.revertedWithCustomError(
+      governor,
+      "NotMember",
+    );
   });
 
   it("counts encrypted votes and reveals only the tally on finalize", async function () {
