@@ -4,7 +4,7 @@ import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { UnlockConfidentialGovernorABI, addresses } from '@ipe-gov/sdk'
 
-export const Route = createFileRoute('/proposals')({ component: Proposals })
+export const Route = createFileRoute('/proposals/')({ component: Proposals })
 
 const GOVERNOR = addresses.sepolia.governor as `0x${string}`
 
@@ -73,7 +73,7 @@ function NewProposalForm() {
       />
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || !description.trim()}
         className="rounded-xl bg-[var(--lagoon-deep)] px-5 py-2 font-semibold text-white disabled:opacity-60"
       >
         {isPending ? 'Submitting…' : 'Propose'}
