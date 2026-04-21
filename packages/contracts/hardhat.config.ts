@@ -16,6 +16,13 @@ import "./tasks/FHECounter";
 
 const MNEMONIC: string = vars.get("MNEMONIC", "test test test test test test test test test test test junk");
 const INFURA_API_KEY: string = vars.get("INFURA_API_KEY", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz");
+const DEPLOYER_PRIVATE_KEY: string = vars.get("DEPLOYER_PRIVATE_KEY", "");
+
+// Sepolia + anvil use a private key if DEPLOYER_PRIVATE_KEY is set; otherwise
+// fall back to the mnemonic (so local tests keep working with the default).
+const remoteAccounts = DEPLOYER_PRIVATE_KEY
+  ? [DEPLOYER_PRIVATE_KEY.startsWith("0x") ? DEPLOYER_PRIVATE_KEY : `0x${DEPLOYER_PRIVATE_KEY}`]
+  : { mnemonic: MNEMONIC, path: "m/44'/60'/0'/0/", count: 10 };
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
@@ -40,20 +47,12 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     anvil: {
-      accounts: {
-        mnemonic: MNEMONIC,
-        path: "m/44'/60'/0'/0/",
-        count: 10,
-      },
+      accounts: remoteAccounts,
       chainId: 31337,
       url: "http://localhost:8545",
     },
     sepolia: {
-      accounts: {
-        mnemonic: MNEMONIC,
-        path: "m/44'/60'/0'/0/",
-        count: 10,
-      },
+      accounts: remoteAccounts,
       chainId: 11155111,
       url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
     },
