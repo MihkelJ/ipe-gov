@@ -5,10 +5,14 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { WagmiProvider } from 'wagmi'
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
+import { wagmiConfig } from '../lib/wagmi'
+import '@rainbow-me/rainbowkit/styles.css'
 
 import appCss from '../styles.css?url'
 
@@ -52,9 +56,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <Header />
-        {children}
-        <Footer />
+        <WagmiProvider config={wagmiConfig}>
+          <RainbowKitProvider>
+            <Header />
+            {children}
+            <Footer />
+          </RainbowKitProvider>
+        </WagmiProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

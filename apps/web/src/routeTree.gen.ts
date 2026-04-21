@@ -9,10 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProposalsRouteImport } from './routes/proposals'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProposalsProposalIdRouteImport } from './routes/proposals.$proposalId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 
+const ProposalsRoute = ProposalsRouteImport.update({
+  id: '/proposals',
+  path: '/proposals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -23,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProposalsProposalIdRoute = ProposalsProposalIdRouteImport.update({
+  id: '/$proposalId',
+  path: '/$proposalId',
+  getParentRoute: () => ProposalsRoute,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -32,35 +44,65 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/proposals': typeof ProposalsRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/proposals/$proposalId': typeof ProposalsProposalIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/proposals': typeof ProposalsRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/proposals/$proposalId': typeof ProposalsProposalIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/proposals': typeof ProposalsRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/proposals/$proposalId': typeof ProposalsProposalIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/demo/tanstack-query'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/proposals'
+    | '/demo/tanstack-query'
+    | '/proposals/$proposalId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/demo/tanstack-query'
-  id: '__root__' | '/' | '/about' | '/demo/tanstack-query'
+  to:
+    | '/'
+    | '/about'
+    | '/proposals'
+    | '/demo/tanstack-query'
+    | '/proposals/$proposalId'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/proposals'
+    | '/demo/tanstack-query'
+    | '/proposals/$proposalId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  ProposalsRoute: typeof ProposalsRouteWithChildren
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/proposals': {
+      id: '/proposals'
+      path: '/proposals'
+      fullPath: '/proposals'
+      preLoaderRoute: typeof ProposalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -75,6 +117,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/proposals/$proposalId': {
+      id: '/proposals/$proposalId'
+      path: '/$proposalId'
+      fullPath: '/proposals/$proposalId'
+      preLoaderRoute: typeof ProposalsProposalIdRouteImport
+      parentRoute: typeof ProposalsRoute
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -85,9 +134,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ProposalsRouteChildren {
+  ProposalsProposalIdRoute: typeof ProposalsProposalIdRoute
+}
+
+const ProposalsRouteChildren: ProposalsRouteChildren = {
+  ProposalsProposalIdRoute: ProposalsProposalIdRoute,
+}
+
+const ProposalsRouteWithChildren = ProposalsRoute._addFileChildren(
+  ProposalsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  ProposalsRoute: ProposalsRouteWithChildren,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
 }
 export const routeTree = rootRouteImport
