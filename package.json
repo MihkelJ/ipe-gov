@@ -24,6 +24,9 @@
       "keccak",
       "lightningcss",
       "secp256k1"
-    ]
+    ],
+    "overrides": {
+      "@zama-fhe/relayer-sdk": "0.4.1"
+    }
   }
 }

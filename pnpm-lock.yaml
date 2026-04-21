@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@zama-fhe/relayer-sdk': 0.4.1
+
 importers:
 
   .:
@@ -110,7 +113,7 @@ importers:
     dependencies:
       '@fhevm/mock-utils':
         specifier: ^0.4.2
-        version: 0.4.2(@zama-fhe/relayer-sdk@0.4.2)(ethers@6.16.0)(typescript@5.9.3)
+        version: 0.4.2(@zama-fhe/relayer-sdk@0.4.1)(ethers@6.16.0)(typescript@5.9.3)
       '@fhevm/solidity':
         specifier: ^0.11.1
         version: 0.11.1
@@ -123,7 +126,10 @@ importers:
         version: 9.39.4
       '@fhevm/hardhat-plugin':
         specifier: ^0.4.2
-        version: 0.4.2(@fhevm/mock-utils@0.4.2(@zama-fhe/relayer-sdk@0.4.2)(ethers@6.16.0)(typescript@5.9.3))(@fhevm/solidity@0.11.1)(@nomicfoundation/hardhat-ethers@3.1.3(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3)))(@zama-fhe/relayer-sdk@0.4.2)(encrypted-types@0.0.4)(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3))
+        version: 0.4.2(@fhevm/mock-utils@0.4.2(@zama-fhe/relayer-sdk@0.4.1)(ethers@6.16.0)(typescript@5.9.3))(@fhevm/solidity@0.11.1)(@nomicfoundation/hardhat-ethers@3.1.3(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3)))(@zama-fhe/relayer-sdk@0.4.1)(encrypted-types@0.0.4)(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3))
+      '@fhevm/host-contracts':
+        specifier: ^0.10.0
+        version: 0.10.0
       '@nomicfoundation/hardhat-chai-matchers':
         specifier: ^2.1.0
         version: 2.1.2(@nomicfoundation/hardhat-ethers@3.1.3(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3)))(chai@4.5.0)(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3))
@@ -152,8 +158,8 @@ importers:
         specifier: ^20.19.30
         version: 20.19.39
       '@zama-fhe/relayer-sdk':
-        specifier: ^0.4.1
-        version: 0.4.2
+        specifier: 0.4.1
+        version: 0.4.1
       chai:
         specifier: ^4.5.0
         version: 4.5.0
@@ -1858,8 +1864,8 @@ packages:
   '@vitest/utils@3.2.4':
     resolution: {integrity: sha512-fB2V0JFrQSMsCo9HiSq3Ezpdv4iYaXRG1Sx8edX3MwxfyNn83mKiGzOcH+Fkxt4MHxr3y42fQi1oeAInqgX2QA==}
 
-  '@zama-fhe/relayer-sdk@0.4.2':
-    resolution: {integrity: sha512-3Q0tINKxz6YseaDxOrNP/648j5Wr2C4Utnjx5npZESjLAc20tWgWFE7BOfx0Kjhs8cx/ykU+tMZBq40+DsiUvA==}
+  '@zama-fhe/relayer-sdk@0.4.1':
+    resolution: {integrity: sha512-bS7tVQbXnsPFgiqm5R4pJ8hbPMYZuRh/Pv89S+jxO60y0mD296F4qIKEO7dgiHjC87V5GFM9DqCLNejjCNVw2Q==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -5327,13 +5333,13 @@ snapshots:
 
   '@fastify/busboy@2.1.1': {}
 
-  '@fhevm/hardhat-plugin@0.4.2(@fhevm/mock-utils@0.4.2(@zama-fhe/relayer-sdk@0.4.2)(ethers@6.16.0)(typescript@5.9.3))(@fhevm/solidity@0.11.1)(@nomicfoundation/hardhat-ethers@3.1.3(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3)))(@zama-fhe/relayer-sdk@0.4.2)(encrypted-types@0.0.4)(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3))':
+  '@fhevm/hardhat-plugin@0.4.2(@fhevm/mock-utils@0.4.2(@zama-fhe/relayer-sdk@0.4.1)(ethers@6.16.0)(typescript@5.9.3))(@fhevm/solidity@0.11.1)(@nomicfoundation/hardhat-ethers@3.1.3(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3)))(@zama-fhe/relayer-sdk@0.4.1)(encrypted-types@0.0.4)(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3))':
     dependencies:
       '@fhevm/host-contracts': 0.10.0
-      '@fhevm/mock-utils': 0.4.2(@zama-fhe/relayer-sdk@0.4.2)(ethers@6.16.0)(typescript@5.9.3)
+      '@fhevm/mock-utils': 0.4.2(@zama-fhe/relayer-sdk@0.4.1)(ethers@6.16.0)(typescript@5.9.3)
       '@fhevm/solidity': 0.11.1
       '@nomicfoundation/hardhat-ethers': 3.1.3(ethers@6.16.0)(hardhat@2.28.6(ts-node@10.9.2(@types/node@20.19.39)(typescript@5.9.3))(typescript@5.9.3))
-      '@zama-fhe/relayer-sdk': 0.4.2
+      '@zama-fhe/relayer-sdk': 0.4.1
       debug: 4.4.3(supports-color@8.1.1)
       dotenv: 16.6.1
       encrypted-types: 0.0.4
@@ -5351,9 +5357,9 @@ snapshots:
       solidity-comments-darwin-arm64: 0.1.1
       solidity-comments-linux-x64-gnu: 0.1.1
 
-  '@fhevm/mock-utils@0.4.2(@zama-fhe/relayer-sdk@0.4.2)(ethers@6.16.0)(typescript@5.9.3)':
+  '@fhevm/mock-utils@0.4.2(@zama-fhe/relayer-sdk@0.4.1)(ethers@6.16.0)(typescript@5.9.3)':
     dependencies:
-      '@zama-fhe/relayer-sdk': 0.4.2
+      '@zama-fhe/relayer-sdk': 0.4.1
       ethers: 6.16.0
     optionalDependencies:
       typescript: 5.9.3
@@ -6527,7 +6533,7 @@ snapshots:
       loupe: 3.2.1
       tinyrainbow: 2.0.0
 
-  '@zama-fhe/relayer-sdk@0.4.2':
+  '@zama-fhe/relayer-sdk@0.4.1':
     dependencies:
       commander: 14.0.3
       ethers: 6.16.0
