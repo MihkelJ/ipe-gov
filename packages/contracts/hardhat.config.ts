@@ -42,7 +42,9 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       accounts: {
-        mnemonic: MNEMONIC,
+        // Hardhat's well-known test mnemonic — never use user credentials for
+        // the local network.
+        mnemonic: "test test test test test test test test test test test junk",
       },
       chainId: 31337,
     },

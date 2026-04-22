@@ -13,13 +13,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(`No UNLOCK_PUBLIC_LOCK_ADDRESS set; deployed MockPublicLock at ${lockAddress}`);
   }
 
+  const votingPeriod = process.env.VOTING_PERIOD_BLOCKS ?? "7200";
+
   const governor = await deploy("UnlockConfidentialGovernor", {
     from: deployer,
-    args: [lockAddress],
+    args: [lockAddress, votingPeriod],
     log: true,
   });
 
-  console.log(`UnlockConfidentialGovernor: ${governor.address} (lock: ${lockAddress})`);
+  console.log(
+    `UnlockConfidentialGovernor: ${governor.address} ` +
+      `(lock: ${lockAddress}, votingPeriod: ${votingPeriod} blocks)`,
+  );
 };
 
 export default func;

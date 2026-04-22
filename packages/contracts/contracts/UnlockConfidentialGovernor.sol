@@ -22,8 +22,10 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
     /// @notice Unlock Protocol PublicLock used for membership checks.
     IPublicLock public immutable LOCK;
 
-    /// @notice Number of blocks a proposal remains open for voting (~1 day at 12s blocks).
-    uint256 public constant VOTING_PERIOD = 7200;
+    /// @notice Number of blocks a proposal remains open for voting.
+    /// @dev Set at deploy time so testnets can use a short window (e.g. 50
+    /// blocks ≈ 10 min on Sepolia) while mainnet picks ~7200 (~1 day).
+    uint256 public immutable VOTING_PERIOD;
 
     /// @notice Proposal record.
     /// @dev Fields are arranged to keep the address + small flags sharing a slot.
@@ -81,8 +83,10 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
 
     /// @notice Deploys the governor bound to a specific Unlock PublicLock.
     /// @param lockAddress Address of the Unlock Protocol lock granting membership.
-    constructor(address lockAddress) {
+    /// @param votingPeriodBlocks Number of blocks each proposal stays open.
+    constructor(address lockAddress, uint256 votingPeriodBlocks) {
         LOCK = IPublicLock(lockAddress);
+        VOTING_PERIOD = votingPeriodBlocks;
     }
 
     /// @notice Creates a new proposal. Caller must hold a valid Unlock key.

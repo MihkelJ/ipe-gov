@@ -17,7 +17,7 @@ async function deployFixture() {
   const govFactory = (await ethers.getContractFactory(
     "UnlockConfidentialGovernor",
   )) as UnlockConfidentialGovernor__factory;
-  const governor = (await govFactory.deploy(lockAddress)) as UnlockConfidentialGovernor;
+  const governor = (await govFactory.deploy(lockAddress, 7200)) as UnlockConfidentialGovernor;
   const governorAddress = await governor.getAddress();
 
   return { lock, lockAddress, governor, governorAddress };

@@ -6,6 +6,11 @@ export const UnlockConfidentialGovernorABI = [
         "internalType": "address",
         "name": "lockAddress",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "votingPeriodBlocks",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
