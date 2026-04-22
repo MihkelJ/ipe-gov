@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAccount, useReadContract, useWriteContract } from 'wagmi'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { UnlockConfidentialGovernorABI, addresses } from '@ipe-gov/sdk'
 import { encryptVote } from '../lib/fhevm'
 import { Button } from '#/components/ui/button'
@@ -65,12 +64,9 @@ function ProposalPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-10">
-      <div className="mb-8 flex items-center justify-between">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/proposals">← All proposals</Link>
-        </Button>
-        <ConnectButton />
-      </div>
+      <Button asChild variant="ghost" size="sm" className="mb-6">
+        <Link to="/proposals">← All proposals</Link>
+      </Button>
 
       <Card>
         <CardHeader>

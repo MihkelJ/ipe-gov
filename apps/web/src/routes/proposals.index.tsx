@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAccount, useReadContract, useWriteContract } from 'wagmi'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { UnlockConfidentialGovernorABI, addresses } from '@ipe-gov/sdk'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -29,10 +28,7 @@ function Proposals() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-10">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Proposals</h1>
-        <ConnectButton />
-      </div>
+      <h1 className="mb-8 text-3xl font-bold tracking-tight">Proposals</h1>
 
       {isConnected ? <NewProposalCard /> : null}
 
