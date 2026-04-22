@@ -12,7 +12,10 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 
-export const Route = createFileRoute('/proposals/')({ component: Proposals })
+export const Route = createFileRoute('/proposals/')({
+  head: () => ({ meta: [{ title: 'Proposals — ipe-gov' }] }),
+  component: Proposals,
+})
 
 const GOVERNOR = addresses.sepolia.governor as `0x${string}`
 

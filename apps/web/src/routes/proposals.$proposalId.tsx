@@ -14,6 +14,9 @@ import {
 } from '#/components/ui/card'
 
 export const Route = createFileRoute('/proposals/$proposalId')({
+  head: ({ params }) => ({
+    meta: [{ title: `Proposal #${params.proposalId} — ipe-gov` }],
+  }),
   component: ProposalPage,
 })
 
