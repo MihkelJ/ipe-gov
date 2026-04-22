@@ -1,7 +1,7 @@
 export const addresses = {
   sepolia: {
-    governor: "0x328A4a458384701272EcB457778922358063C363",
-    lock: "0x6d7Cd6994e5e976877451216A460D15346c4E4c7",
+    governor: "0x902374a71dC98987d5b13560CA463cFfdA3bFedb",
+    lock: "0x7e288c0df7e57B3c2C1C008A039C6127164edf31",
   },
 } as const;
 

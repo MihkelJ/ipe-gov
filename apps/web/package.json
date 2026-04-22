@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ipe-gov/ipfs": "workspace:*",
     "@ipe-gov/sdk": "workspace:*",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tailwindcss/vite": "^4.1.18",

@@ -5,6 +5,7 @@ import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { encryptVote, publicDecryptHandles } from '../lib/fhevm'
 import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
 import { useProposal, type ProposalHandles } from '../lib/useProposal'
+import { useProposalDescription } from '../lib/useProposalDescription'
 import { Button } from '#/components/ui/button'
 import {
   Card,
@@ -26,6 +27,9 @@ function ProposalPage() {
   const { proposalId } = Route.useParams()
   const id = BigInt(proposalId)
   const proposal = useProposal(id)
+  const { text: description, isLoading: descLoading } = useProposalDescription(
+    proposal.descriptionCid,
+  )
   const [status, setStatus] = useState<string>('')
 
   return (
@@ -36,8 +40,17 @@ function ProposalPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Proposal #{proposalId}</CardTitle>
+          <CardTitle className="text-2xl">
+            {description
+              ? description
+              : descLoading
+                ? 'Loading description…'
+                : `Proposal #${proposalId}`}
+          </CardTitle>
           <CardDescription>
+            <span className="mr-2 text-xs uppercase tracking-wider">
+              #{proposalId}
+            </span>
             <ProposalStatusLine
               finalized={proposal.finalized}
               votingClosed={proposal.votingClosed}

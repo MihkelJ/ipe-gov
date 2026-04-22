@@ -37,6 +37,7 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
         euint32 forVotes;
         euint32 againstVotes;
         euint32 abstainVotes;
+        string descriptionCid;
     }
 
     /// @notice Total number of proposals ever created.
@@ -50,8 +51,8 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
     /// @notice Emitted when a new proposal is created.
     /// @param id The proposal id.
     /// @param proposer The member that created the proposal.
-    /// @param description Free-form proposal description.
-    event ProposalCreated(uint256 indexed id, address indexed proposer, string description);
+    /// @param descriptionCid IPFS CID of the pinned proposal description.
+    event ProposalCreated(uint256 indexed id, address indexed proposer, string descriptionCid);
 
     /// @notice Emitted when a member casts a (still-encrypted) vote.
     /// @param id The proposal id.
@@ -90,9 +91,9 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
     }
 
     /// @notice Creates a new proposal. Caller must hold a valid Unlock key.
-    /// @param description Free-form proposal description.
+    /// @param descriptionCid IPFS CID of the pinned proposal description JSON.
     /// @return id The id of the newly created proposal.
-    function propose(string calldata description) external onlyMember returns (uint256 id) {
+    function propose(string calldata descriptionCid) external onlyMember returns (uint256 id) {
         id = ++proposalCount;
         Proposal storage p = _proposals[id];
         p.proposer = msg.sender;
@@ -101,12 +102,13 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
         p.forVotes = FHE.asEuint32(0);
         p.againstVotes = FHE.asEuint32(0);
         p.abstainVotes = FHE.asEuint32(0);
+        p.descriptionCid = descriptionCid;
 
         FHE.allowThis(p.forVotes);
         FHE.allowThis(p.againstVotes);
         FHE.allowThis(p.abstainVotes);
 
-        emit ProposalCreated(id, msg.sender, description);
+        emit ProposalCreated(id, msg.sender, descriptionCid);
     }
 
     /// @notice Casts an encrypted vote on a proposal.
@@ -166,6 +168,7 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
     /// @return againstVotes Encrypted tally of "against" votes.
     /// @return abstainVotes Encrypted tally of "abstain" votes.
     /// @return finalized Whether the proposal has been finalized.
+    /// @return descriptionCid IPFS CID of the pinned proposal description.
     function getProposal(
         uint256 id
     )
@@ -178,10 +181,20 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
             euint32 forVotes,
             euint32 againstVotes,
             euint32 abstainVotes,
-            bool finalized
+            bool finalized,
+            string memory descriptionCid
         )
     {
         Proposal storage p = _proposals[id];
-        return (p.proposer, p.startBlock, p.endBlock, p.forVotes, p.againstVotes, p.abstainVotes, p.finalized);
+        return (
+            p.proposer,
+            p.startBlock,
+            p.endBlock,
+            p.forVotes,
+            p.againstVotes,
+            p.abstainVotes,
+            p.finalized,
+            p.descriptionCid
+        );
     }
 }

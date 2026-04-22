@@ -16,6 +16,7 @@ export type ProposalState = {
   handles?: ProposalHandles;
   finalized: boolean;
   votingClosed: boolean;
+  descriptionCid?: string;
   refetch: () => Promise<unknown>;
 };
 
@@ -35,8 +36,16 @@ export function useProposal(id: bigint): ProposalState {
     return { isLoading, finalized: false, votingClosed: false, refetch };
   }
 
-  const [proposer, startBlock, endBlock, forVotes, againstVotes, abstainVotes, finalized] =
-    data;
+  const [
+    proposer,
+    startBlock,
+    endBlock,
+    forVotes,
+    againstVotes,
+    abstainVotes,
+    finalized,
+    descriptionCid,
+  ] = data;
 
   return {
     isLoading,
@@ -46,6 +55,7 @@ export function useProposal(id: bigint): ProposalState {
     handles: { forVotes, againstVotes, abstainVotes },
     finalized,
     votingClosed: currentBlock !== undefined && currentBlock > endBlock,
+    descriptionCid,
     refetch,
   };
 }

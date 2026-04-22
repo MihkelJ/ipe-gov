@@ -85,7 +85,7 @@ export const UnlockConfidentialGovernorABI = [
       {
         "indexed": false,
         "internalType": "string",
-        "name": "description",
+        "name": "descriptionCid",
         "type": "string"
       }
     ],
@@ -243,6 +243,11 @@ export const UnlockConfidentialGovernorABI = [
         "internalType": "bool",
         "name": "finalized",
         "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "descriptionCid",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -289,7 +294,7 @@ export const UnlockConfidentialGovernorABI = [
     "inputs": [
       {
         "internalType": "string",
-        "name": "description",
+        "name": "descriptionCid",
         "type": "string"
       }
     ],

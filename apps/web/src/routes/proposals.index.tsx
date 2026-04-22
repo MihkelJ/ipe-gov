@@ -1,7 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import {
+  useAccount,
+  useReadContract,
+  useSignMessage,
+  useWriteContract,
+} from 'wagmi'
 import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
+import { useProposal } from '../lib/useProposal'
+import { useProposalDescription } from '../lib/useProposalDescription'
+import { buildPinMessage, pinDescription } from '../server/pinDescription'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import {
@@ -41,40 +49,74 @@ function Proposals() {
             </CardContent>
           </Card>
         ) : (
-          ids.map((id) => (
-            <Link
-              key={id}
-              to="/proposals/$proposalId"
-              params={{ proposalId: String(id) }}
-              className="block"
-            >
-              <Card className="transition hover:border-primary/50 hover:bg-accent/40">
-                <CardHeader>
-                  <CardTitle>Proposal #{id}</CardTitle>
-                  <CardDescription>Click to view and vote.</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))
+          ids.map((id) => <ProposalRow key={id} id={id} />)
         )}
       </section>
     </main>
   )
 }
 
-function NewProposalCard() {
-  const [description, setDescription] = useState('')
-  const { writeContract, isPending } = useWriteContract()
+function ProposalRow({ id }: { id: number }) {
+  const proposal = useProposal(BigInt(id))
+  const { text } = useProposalDescription(proposal.descriptionCid)
+  const title = text ?? (proposal.descriptionCid ? 'Loading description…' : `Proposal #${id}`)
+  const subtitle = proposal.finalized
+    ? 'Finalized'
+    : proposal.votingClosed
+      ? 'Voting closed — awaiting finalization'
+      : 'Voting open'
 
-  function submit(e: React.FormEvent) {
+  return (
+    <Link to="/proposals/$proposalId" params={{ proposalId: String(id) }} className="block">
+      <Card className="transition hover:border-primary/50 hover:bg-accent/40">
+        <CardHeader>
+          <CardTitle className="flex items-baseline gap-3">
+            <span className="text-xs font-mono text-muted-foreground">#{id}</span>
+            <span className="truncate">{title}</span>
+          </CardTitle>
+          <CardDescription>{subtitle}</CardDescription>
+        </CardHeader>
+      </Card>
+    </Link>
+  )
+}
+
+function NewProposalCard() {
+  const { address } = useAccount()
+  const [text, setText] = useState('')
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+  const { signMessageAsync } = useSignMessage()
+  const { writeContractAsync } = useWriteContract()
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!description.trim()) return
-    writeContract({
-      address: GOVERNOR_ADDRESS,
-      abi: GOVERNOR_ABI,
-      functionName: 'propose',
-      args: [description],
-    })
+    if (!address || !text.trim()) return
+    setBusy(true)
+    try {
+      setStatus('Requesting signature…')
+      const message = buildPinMessage(address, Date.now())
+      const signature = await signMessageAsync({ message })
+
+      setStatus('Pinning to IPFS…')
+      const { cid } = await pinDescription({
+        data: { text: text.trim(), address, signature, message },
+      })
+
+      setStatus('Submitting on-chain proposal…')
+      await writeContractAsync({
+        address: GOVERNOR_ADDRESS,
+        abi: GOVERNOR_ABI,
+        functionName: 'propose',
+        args: [cid],
+      })
+      setStatus('Proposal submitted.')
+      setText('')
+    } catch (err) {
+      setStatus(`Error: ${(err as Error).message}`)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -82,19 +124,24 @@ function NewProposalCard() {
       <CardHeader>
         <CardTitle>New proposal</CardTitle>
         <CardDescription>
-          Only holders of a valid Unlock Protocol key can propose.
+          Only holders of a valid Unlock Protocol key can propose. Your description
+          is pinned to IPFS; the contract only stores the CID.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={submit} className="flex gap-2">
+        <form onSubmit={submit} className="flex flex-col gap-3">
           <Input
             placeholder="What should the DAO decide?"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            disabled={busy}
           />
-          <Button type="submit" disabled={isPending || !description.trim()}>
-            {isPending ? 'Submitting…' : 'Propose'}
-          </Button>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-muted-foreground">{status}</span>
+            <Button type="submit" disabled={busy || !text.trim()}>
+              {busy ? 'Submitting…' : 'Propose'}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

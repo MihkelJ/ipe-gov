@@ -20,6 +20,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@ipe-gov/ipfs':
+        specifier: workspace:*
+        version: link:../../packages/ipfs
       '@ipe-gov/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -238,6 +241,12 @@ importers:
       typescript-eslint:
         specifier: ^8.54.0
         version: 8.59.0(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+
+  packages/ipfs:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/sdk:
     devDependencies:

@@ -108,8 +108,10 @@ describe("UnlockConfidentialGovernor", function () {
 
     await (await governor.finalize(1)).wait();
 
-    const [, , , forVotes, againstVotes, abstainVotes, finalized] = await governor.getProposal(1);
+    const [, , , forVotes, againstVotes, abstainVotes, finalized, descriptionCid] =
+      await governor.getProposal(1);
     expect(finalized).to.eq(true);
+    expect(descriptionCid).to.eq("p1");
 
     const f = await fhevm.publicDecryptEuint(FhevmType.euint32, forVotes);
     const a = await fhevm.publicDecryptEuint(FhevmType.euint32, againstVotes);
