@@ -43,3 +43,19 @@ export async function encryptVote(
     inputProof: bytesToHex(inputProof),
   };
 }
+
+/**
+ * Publicly decrypts a list of ciphertext handles via the Zama gateway.
+ * The handles must have been marked `makePubliclyDecryptable` on-chain first.
+ */
+export async function publicDecryptHandles(handles: Hex[]): Promise<bigint[]> {
+  const inst = await getFhevmInstance();
+  const result = await inst.publicDecrypt(handles);
+  return handles.map((h) => {
+    const value = result.clearValues[h];
+    if (typeof value !== "bigint") {
+      throw new Error(`Unexpected decrypt result for ${h}: ${typeof value}`);
+    }
+    return value;
+  });
+}
