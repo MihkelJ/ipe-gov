@@ -3,6 +3,15 @@ import { useState } from 'react'
 import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { UnlockConfidentialGovernorABI, addresses } from '@ipe-gov/sdk'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
 
 export const Route = createFileRoute('/proposals/')({ component: Proposals })
 
@@ -19,36 +28,44 @@ function Proposals() {
   const ids = Array.from({ length: total }, (_, i) => total - i)
 
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Proposals</h1>
+    <main className="mx-auto max-w-3xl px-4 pb-16 pt-10">
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Proposals</h1>
         <ConnectButton />
       </div>
 
-      {isConnected ? <NewProposalForm /> : null}
+      {isConnected ? <NewProposalCard /> : null}
 
-      <ul className="mt-8 space-y-2">
+      <section className="mt-8 space-y-3">
         {ids.length === 0 ? (
-          <p className="text-[var(--sea-ink-soft)]">No proposals yet.</p>
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              No proposals yet.
+            </CardContent>
+          </Card>
         ) : (
           ids.map((id) => (
-            <li key={id}>
-              <Link
-                to="/proposals/$proposalId"
-                params={{ proposalId: String(id) }}
-                className="block rounded-xl border border-[rgba(23,58,64,0.1)] p-4 hover:bg-[rgba(79,184,178,0.08)]"
-              >
-                Proposal #{id}
-              </Link>
-            </li>
+            <Link
+              key={id}
+              to="/proposals/$proposalId"
+              params={{ proposalId: String(id) }}
+              className="block"
+            >
+              <Card className="transition hover:border-primary/50 hover:bg-accent/40">
+                <CardHeader>
+                  <CardTitle>Proposal #{id}</CardTitle>
+                  <CardDescription>Click to view and vote.</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           ))
         )}
-      </ul>
+      </section>
     </main>
   )
 }
 
-function NewProposalForm() {
+function NewProposalCard() {
   const [description, setDescription] = useState('')
   const { writeContract, isPending } = useWriteContract()
 
@@ -64,20 +81,25 @@ function NewProposalForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex gap-2">
-      <input
-        className="flex-1 rounded-xl border border-[rgba(23,58,64,0.2)] px-4 py-2"
-        placeholder="Proposal description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <button
-        type="submit"
-        disabled={isPending || !description.trim()}
-        className="rounded-xl bg-[var(--lagoon-deep)] px-5 py-2 font-semibold text-white disabled:opacity-60"
-      >
-        {isPending ? 'Submitting…' : 'Propose'}
-      </button>
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>New proposal</CardTitle>
+        <CardDescription>
+          Only holders of a valid Unlock Protocol key can propose.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="flex gap-2">
+          <Input
+            placeholder="What should the DAO decide?"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <Button type="submit" disabled={isPending || !description.trim()}>
+            {isPending ? 'Submitting…' : 'Propose'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

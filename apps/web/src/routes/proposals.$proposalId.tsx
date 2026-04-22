@@ -4,6 +4,15 @@ import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { UnlockConfidentialGovernorABI, addresses } from '@ipe-gov/sdk'
 import { encryptVote } from '../lib/fhevm'
+import { Button } from '#/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
 
 export const Route = createFileRoute('/proposals/$proposalId')({
   component: ProposalPage,
@@ -55,59 +64,62 @@ function ProposalPage() {
   const finalized = proposal ? (proposal as readonly unknown[])[6] === true : false
 
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <div className="mb-6 flex items-center justify-between">
-        <Link to="/proposals" className="text-[var(--lagoon-deep)] underline">
-          ← All proposals
-        </Link>
+    <main className="mx-auto max-w-3xl px-4 pb-16 pt-10">
+      <div className="mb-8 flex items-center justify-between">
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/proposals">← All proposals</Link>
+        </Button>
         <ConnectButton />
       </div>
 
-      <h1 className="mb-4 text-3xl font-bold">Proposal #{proposalId}</h1>
-
-      {!proposal ? (
-        <p>Loading…</p>
-      ) : (
-        <>
-          <p className="text-sm text-[var(--sea-ink-soft)]">
-            Finalized: {finalized ? 'yes' : 'no'}
-          </p>
-
-          {!isConnected ? (
-            <p className="mt-6">Connect a wallet to vote.</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Proposal #{proposalId}</CardTitle>
+          <CardDescription>
+            Status: {finalized ? 'finalized' : 'voting open'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!proposal ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : !isConnected ? (
+            <p className="text-sm text-muted-foreground">
+              Connect a wallet to vote.
+            </p>
           ) : alreadyVoted ? (
-            <p className="mt-6 text-[var(--sea-ink-soft)]">You have already voted.</p>
+            <p className="text-sm text-muted-foreground">
+              You have already voted on this proposal.
+            </p>
           ) : finalized ? (
-            <p className="mt-6 text-[var(--sea-ink-soft)]">Voting is closed.</p>
+            <p className="text-sm text-muted-foreground">Voting is closed.</p>
           ) : (
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => vote(1)}
-                disabled={isPending}
-                className="rounded-xl bg-[var(--lagoon-deep)] px-5 py-2 font-semibold text-white disabled:opacity-60"
-              >
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => vote(1)} disabled={isPending}>
                 For
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => vote(0)}
                 disabled={isPending}
-                className="rounded-xl border border-[rgba(23,58,64,0.2)] px-5 py-2 font-semibold disabled:opacity-60"
+                variant="outline"
               >
                 Against
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => vote(2)}
                 disabled={isPending}
-                className="rounded-xl border border-[rgba(23,58,64,0.2)] px-5 py-2 font-semibold disabled:opacity-60"
+                variant="ghost"
               >
                 Abstain
-              </button>
+              </Button>
             </div>
           )}
-
-          {status ? <p className="mt-4 text-sm">{status}</p> : null}
-        </>
-      )}
+        </CardContent>
+        {status ? (
+          <CardFooter>
+            <p className="text-sm text-muted-foreground">{status}</p>
+          </CardFooter>
+        ) : null}
+      </Card>
     </main>
   )
 }
