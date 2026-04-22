@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ipe-gov-pin-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true }
+  // Secrets (set via `wrangler secret put <NAME>`):
+  //   PINATA_JWT          Pinata API JWT for pinJSONToIPFS
+  //   SEPOLIA_RPC_URL     e.g. https://sepolia.infura.io/v3/<key>
+  // Public origin allowlist (comma separated). Set with `wrangler secret put`
+  // or as a regular var in vars below.
+  // "vars": {
+  //   "ALLOWED_ORIGINS": "http://localhost:3000,https://your-web.example"
+  // }
+}
