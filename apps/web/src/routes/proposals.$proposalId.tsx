@@ -28,16 +28,6 @@ export const Route = createFileRoute('/proposals/$proposalId')({
 
 const GOVERNOR = addresses.sepolia.governor as `0x${string}`
 
-type ProposalTuple = readonly [
-  proposer: `0x${string}`,
-  startBlock: bigint,
-  endBlock: bigint,
-  forVotes: `0x${string}`,
-  againstVotes: `0x${string}`,
-  abstainVotes: `0x${string}`,
-  finalized: boolean,
-]
-
 function ProposalPage() {
   const { proposalId } = Route.useParams()
   const id = BigInt(proposalId)
@@ -60,9 +50,8 @@ function ProposalPage() {
 
   const { data: currentBlock } = useBlockNumber({ watch: true })
 
-  const p = proposal as ProposalTuple | undefined
-  const endBlock = p?.[2]
-  const finalized = p?.[6] ?? false
+  const endBlock = proposal?.[2]
+  const finalized = proposal?.[6] ?? false
   const votingClosed =
     endBlock !== undefined && currentBlock !== undefined
       ? currentBlock > endBlock
@@ -128,7 +117,7 @@ function ProposalPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!p ? (
+          {!proposal ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : !isConnected ? (
             <p className="text-sm text-muted-foreground">
@@ -183,9 +172,8 @@ function Tallies({ proposalId }: { proposalId: bigint }) {
     functionName: 'getProposal',
     args: [proposalId],
   })
-  const p = proposal as ProposalTuple | undefined
-  const handles = p
-    ? ([p[3], p[4], p[5]] as [`0x${string}`, `0x${string}`, `0x${string}`])
+  const handles = proposal
+    ? ([proposal[3], proposal[4], proposal[5]] as const)
     : undefined
 
   const {
@@ -194,7 +182,7 @@ function Tallies({ proposalId }: { proposalId: bigint }) {
     error,
   } = useQuery({
     queryKey: ['tallies', proposalId.toString(), handles],
-    queryFn: () => publicDecryptHandles(handles!),
+    queryFn: () => publicDecryptHandles([...handles!]),
     enabled: Boolean(handles),
     staleTime: Infinity,
   })

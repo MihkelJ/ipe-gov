@@ -26,7 +26,7 @@ function Proposals() {
     abi: UnlockConfidentialGovernorABI,
     functionName: 'proposalCount',
   })
-  const total = count ? Number(count as bigint) : 0
+  const total = count ? Number(count) : 0
   const ids = Array.from({ length: total }, (_, i) => total - i)
 
   return (
