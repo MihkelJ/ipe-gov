@@ -21,11 +21,13 @@ function applyThemeMode(mode: ThemeMode) {
 
 export default function ThemeToggle() {
   const [mode, setMode] = useState<ThemeMode>('auto')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const initial = getInitialMode()
     setMode(initial)
     applyThemeMode(initial)
+    setMounted(true)
   }, [])
 
   useEffect(() => {
@@ -44,7 +46,10 @@ export default function ThemeToggle() {
     window.localStorage.setItem('theme', next)
   }
 
-  const isDark = document.documentElement.classList.contains('dark')
+  const isDark =
+    mounted && typeof document !== 'undefined'
+      ? document.documentElement.classList.contains('dark')
+      : false
 
   return (
     <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
