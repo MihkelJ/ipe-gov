@@ -1,12 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import {
-  useAccount,
-  useReadContract,
-  useSignMessage,
-  useWriteContract,
-} from 'wagmi'
+import { useAccount, useReadContract, useSignMessage } from 'wagmi'
 import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
+import { useSponsoredWrite } from '../hooks/useSponsoredWrite'
 import { useProposal } from '../lib/useProposal'
 import { useProposalDescription } from '../lib/useProposalDescription'
 import { buildPinMessage, pinDescription } from '../server/pinDescription'
@@ -87,7 +83,7 @@ function NewProposalCard() {
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
   const { signMessageAsync } = useSignMessage()
-  const { writeContractAsync } = useWriteContract()
+  const { mutateAsync: sponsoredWrite } = useSponsoredWrite()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -104,7 +100,7 @@ function NewProposalCard() {
       })
 
       setStatus('Submitting on-chain proposal…')
-      await writeContractAsync({
+      await sponsoredWrite({
         address: GOVERNOR_ADDRESS,
         abi: GOVERNOR_ABI,
         functionName: 'propose',

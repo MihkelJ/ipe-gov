@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ipe-gov-paymaster-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true }
+  // Secrets (set via `wrangler secret put <NAME>`):
+  //   PIMLICO_API_KEY     Pimlico API key (paymaster + bundler)
+  //   SEPOLIA_RPC_URL     RPC endpoint used for the Unlock key check
+  // Public origin allowlist (comma separated). Set as a regular var below,
+  // or via `wrangler deploy --var ALLOWED_ORIGINS:...`.
+  // "vars": {
+  //   "ALLOWED_ORIGINS": "http://localhost:3000,https://your-web.example"
+  // }
+}

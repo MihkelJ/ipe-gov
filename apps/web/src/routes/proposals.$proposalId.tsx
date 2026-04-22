@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
 import { encryptVote, publicDecryptHandles } from '../lib/fhevm'
 import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
+import { useSponsoredWrite } from '../hooks/useSponsoredWrite'
 import { useProposal, type ProposalHandles } from '../lib/useProposal'
 import { useProposalDescription } from '../lib/useProposalDescription'
 import { Button } from '#/components/ui/button'
@@ -143,12 +144,12 @@ function FinalizeAction({
   onStatusChange: (s: string) => void
   onDone: () => Promise<unknown>
 }) {
-  const { writeContractAsync, isPending } = useWriteContract()
+  const { mutateAsync: sponsoredWrite, isPending } = useSponsoredWrite()
 
   async function finalize() {
     onStatusChange('Submitting finalize transaction…')
     try {
-      await writeContractAsync({
+      await sponsoredWrite({
         address: GOVERNOR_ADDRESS,
         abi: GOVERNOR_ABI,
         functionName: 'finalize',
@@ -178,7 +179,7 @@ function VoteAction({
   onDone: () => Promise<unknown>
 }) {
   const { address } = useAccount()
-  const { writeContractAsync, isPending } = useWriteContract()
+  const { mutateAsync: sponsoredWrite, isPending } = useSponsoredWrite()
   const { data: alreadyVoted } = useReadContract({
     address: GOVERNOR_ADDRESS,
     abi: GOVERNOR_ABI,
@@ -205,7 +206,7 @@ function VoteAction({
         support,
       )
       onStatusChange('Submitting transaction…')
-      await writeContractAsync({
+      await sponsoredWrite({
         address: GOVERNOR_ADDRESS,
         abi: GOVERNOR_ABI,
         functionName: 'castVote',
