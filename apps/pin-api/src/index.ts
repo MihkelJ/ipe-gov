@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { createPublicClient, http, verifyMessage, type Hex } from "viem";
 import { sepolia } from "viem/chains";
 import { pinProposalDescription } from "@ipe-gov/ipfs";
-import { MockPublicLockABI, addresses } from "@ipe-gov/sdk";
+import { PublicLockABI, addresses } from "@ipe-gov/sdk";
 
 type Env = {
   PINATA_JWT: string;
@@ -95,7 +95,7 @@ app.post("/pin", async (c) => {
   });
   const hasKey = await client.readContract({
     address: addresses.sepolia.lock as Hex,
-    abi: MockPublicLockABI,
+    abi: PublicLockABI,
     functionName: "getHasValidKey",
     args: [body.address],
   });

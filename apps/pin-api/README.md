@@ -22,7 +22,7 @@ The Worker:
 
 1. Verifies `signature` matches `address` over `message` (viem `verifyMessage`).
 2. Rejects messages older than 10 minutes.
-3. Reads `MockPublicLock.getHasValidKey(address)` over Sepolia RPC.
+3. Reads Unlock Protocol `PublicLock.getHasValidKey(address)` over Sepolia RPC.
 4. Pins the description JSON to IPFS via Pinata and returns the CID.
 
 ## Local dev

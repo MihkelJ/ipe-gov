@@ -3,16 +3,7 @@ pragma solidity ^0.8.24;
 
 import {FHE, euint32, externalEuint32, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-
-/// @title IPublicLock
-/// @author ipe-gov
-/// @notice Minimal subset of Unlock Protocol's PublicLock interface.
-interface IPublicLock {
-    /// @notice Returns whether the given address holds a valid (non-expired) key.
-    /// @param keyOwner The address to check.
-    /// @return valid True if the address owns a valid key.
-    function getHasValidKey(address keyOwner) external view returns (bool valid);
-}
+import {IPublicLockV15} from "@unlock-protocol/contracts/dist/PublicLock/IPublicLockV15.sol";
 
 /// @title UnlockConfidentialGovernor
 /// @author ipe-gov
@@ -20,7 +11,7 @@ interface IPublicLock {
 /// Eligibility is 1-member-1-vote, tied to holding a valid Unlock Protocol key.
 contract UnlockConfidentialGovernor is ZamaEthereumConfig {
     /// @notice Unlock Protocol PublicLock used for membership checks.
-    IPublicLock public immutable LOCK;
+    IPublicLockV15 public immutable LOCK;
 
     /// @notice Number of blocks a proposal remains open for voting.
     /// @dev Set at deploy time so testnets can use a short window (e.g. 50
@@ -86,7 +77,7 @@ contract UnlockConfidentialGovernor is ZamaEthereumConfig {
     /// @param lockAddress Address of the Unlock Protocol lock granting membership.
     /// @param votingPeriodBlocks Number of blocks each proposal stays open.
     constructor(address lockAddress, uint256 votingPeriodBlocks) {
-        LOCK = IPublicLock(lockAddress);
+        LOCK = IPublicLockV15(lockAddress);
         VOTING_PERIOD = votingPeriodBlocks;
     }
 

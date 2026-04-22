@@ -129,7 +129,7 @@ export const UnlockConfidentialGovernorABI = [
     "name": "LOCK",
     "outputs": [
       {
-        "internalType": "contract IPublicLock",
+        "internalType": "contract IPublicLockV15",
         "name": "",
         "type": "address"
       }
