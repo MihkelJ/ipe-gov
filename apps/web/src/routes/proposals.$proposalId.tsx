@@ -1,14 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import {
-  useAccount,
-  useBlockNumber,
-  useReadContract,
-  useWriteContract,
-} from 'wagmi'
-import { UnlockConfidentialGovernorABI, addresses } from '@ipe-gov/sdk'
+import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { encryptVote, publicDecryptHandles } from '../lib/fhevm'
+import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
+import { useProposal, type ProposalHandles } from '../lib/useProposal'
 import { Button } from '#/components/ui/button'
 import {
   Card,
@@ -26,74 +22,11 @@ export const Route = createFileRoute('/proposals/$proposalId')({
   component: ProposalPage,
 })
 
-const GOVERNOR = addresses.sepolia.governor as `0x${string}`
-
 function ProposalPage() {
   const { proposalId } = Route.useParams()
   const id = BigInt(proposalId)
-  const { address, isConnected } = useAccount()
-
-  const { data: proposal, refetch: refetchProposal } = useReadContract({
-    address: GOVERNOR,
-    abi: UnlockConfidentialGovernorABI,
-    functionName: 'getProposal',
-    args: [id],
-  })
-
-  const { data: alreadyVoted, refetch: refetchHasVoted } = useReadContract({
-    address: GOVERNOR,
-    abi: UnlockConfidentialGovernorABI,
-    functionName: 'hasVoted',
-    args: address ? [id, address] : undefined,
-    query: { enabled: Boolean(address) },
-  })
-
-  const { data: currentBlock } = useBlockNumber({ watch: true })
-
-  const endBlock = proposal?.[2]
-  const finalized = proposal?.[6] ?? false
-  const votingClosed =
-    endBlock !== undefined && currentBlock !== undefined
-      ? currentBlock > endBlock
-      : false
-
-  const { writeContractAsync, isPending: txPending } = useWriteContract()
+  const proposal = useProposal(id)
   const [status, setStatus] = useState<string>('')
-
-  async function vote(support: 0 | 1 | 2) {
-    if (!address) return
-    setStatus('Encrypting vote…')
-    try {
-      const { handle, inputProof } = await encryptVote(GOVERNOR, address, support)
-      setStatus('Submitting transaction…')
-      await writeContractAsync({
-        address: GOVERNOR,
-        abi: UnlockConfidentialGovernorABI,
-        functionName: 'castVote',
-        args: [id, handle, inputProof],
-      })
-      setStatus('Vote submitted.')
-      await Promise.all([refetchProposal(), refetchHasVoted()])
-    } catch (err) {
-      setStatus(`Error: ${(err as Error).message}`)
-    }
-  }
-
-  async function finalize() {
-    setStatus('Submitting finalize transaction…')
-    try {
-      await writeContractAsync({
-        address: GOVERNOR,
-        abi: UnlockConfidentialGovernorABI,
-        functionName: 'finalize',
-        args: [id],
-      })
-      setStatus('Proposal finalized.')
-      await refetchProposal()
-    } catch (err) {
-      setStatus(`Error: ${(err as Error).message}`)
-    }
-  }
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-10">
@@ -105,55 +38,19 @@ function ProposalPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Proposal #{proposalId}</CardTitle>
           <CardDescription>
-            Status:{' '}
-            {finalized
-              ? 'finalized'
-              : votingClosed
-                ? 'voting closed — awaiting finalization'
-                : 'voting open'}
-            {endBlock !== undefined && !finalized
-              ? ` · voting ends at block ${endBlock.toString()}`
-              : null}
+            <ProposalStatusLine
+              finalized={proposal.finalized}
+              votingClosed={proposal.votingClosed}
+              endBlock={proposal.endBlock}
+            />
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!proposal ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : !isConnected ? (
-            <p className="text-sm text-muted-foreground">
-              Connect a wallet to vote.
-            </p>
-          ) : finalized ? (
-            <Tallies proposalId={id} />
-          ) : votingClosed ? (
-            <Button onClick={finalize} disabled={txPending}>
-              Finalize proposal
-            </Button>
-          ) : alreadyVoted ? (
-            <p className="text-sm text-muted-foreground">
-              You have already voted on this proposal.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => vote(1)} disabled={txPending}>
-                For
-              </Button>
-              <Button
-                onClick={() => vote(0)}
-                disabled={txPending}
-                variant="outline"
-              >
-                Against
-              </Button>
-              <Button
-                onClick={() => vote(2)}
-                disabled={txPending}
-                variant="ghost"
-              >
-                Abstain
-              </Button>
-            </div>
-          )}
+          <ProposalActions
+            id={id}
+            proposal={proposal}
+            onStatusChange={setStatus}
+          />
         </CardContent>
         {status ? (
           <CardFooter>
@@ -165,25 +62,177 @@ function ProposalPage() {
   )
 }
 
-function Tallies({ proposalId }: { proposalId: bigint }) {
-  const { data: proposal } = useReadContract({
-    address: GOVERNOR,
-    abi: UnlockConfidentialGovernorABI,
-    functionName: 'getProposal',
-    args: [proposalId],
-  })
-  const handles = proposal
-    ? ([proposal[3], proposal[4], proposal[5]] as const)
-    : undefined
+function ProposalStatusLine({
+  finalized,
+  votingClosed,
+  endBlock,
+}: {
+  finalized: boolean
+  votingClosed: boolean
+  endBlock?: bigint
+}) {
+  const label = finalized
+    ? 'finalized'
+    : votingClosed
+      ? 'voting closed — awaiting finalization'
+      : 'voting open'
 
+  return (
+    <>
+      Status: {label}
+      {endBlock !== undefined && !finalized
+        ? ` · voting ends at block ${endBlock.toString()}`
+        : null}
+    </>
+  )
+}
+
+type ActionsProps = {
+  id: bigint
+  proposal: ReturnType<typeof useProposal>
+  onStatusChange: (s: string) => void
+}
+
+function ProposalActions({ id, proposal, onStatusChange }: ActionsProps) {
+  const { isConnected } = useAccount()
+
+  if (proposal.isLoading || !proposal.handles) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>
+  }
+  if (!isConnected) {
+    return (
+      <p className="text-sm text-muted-foreground">Connect a wallet to vote.</p>
+    )
+  }
+  if (proposal.finalized) {
+    return <Tallies handles={proposal.handles} />
+  }
+  if (proposal.votingClosed) {
+    return (
+      <FinalizeAction
+        id={id}
+        onStatusChange={onStatusChange}
+        onDone={proposal.refetch}
+      />
+    )
+  }
+  return (
+    <VoteAction id={id} onStatusChange={onStatusChange} onDone={proposal.refetch} />
+  )
+}
+
+function FinalizeAction({
+  id,
+  onStatusChange,
+  onDone,
+}: {
+  id: bigint
+  onStatusChange: (s: string) => void
+  onDone: () => Promise<unknown>
+}) {
+  const { writeContractAsync, isPending } = useWriteContract()
+
+  async function finalize() {
+    onStatusChange('Submitting finalize transaction…')
+    try {
+      await writeContractAsync({
+        address: GOVERNOR_ADDRESS,
+        abi: GOVERNOR_ABI,
+        functionName: 'finalize',
+        args: [id],
+      })
+      onStatusChange('Proposal finalized.')
+      await onDone()
+    } catch (err) {
+      onStatusChange(`Error: ${(err as Error).message}`)
+    }
+  }
+
+  return (
+    <Button onClick={finalize} disabled={isPending}>
+      Finalize proposal
+    </Button>
+  )
+}
+
+function VoteAction({
+  id,
+  onStatusChange,
+  onDone,
+}: {
+  id: bigint
+  onStatusChange: (s: string) => void
+  onDone: () => Promise<unknown>
+}) {
+  const { address } = useAccount()
+  const { writeContractAsync, isPending } = useWriteContract()
+  const { data: alreadyVoted } = useReadContract({
+    address: GOVERNOR_ADDRESS,
+    abi: GOVERNOR_ABI,
+    functionName: 'hasVoted',
+    args: address ? [id, address] : undefined,
+    query: { enabled: Boolean(address) },
+  })
+
+  if (alreadyVoted) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        You have already voted on this proposal.
+      </p>
+    )
+  }
+
+  async function cast(support: 0 | 1 | 2) {
+    if (!address) return
+    onStatusChange('Encrypting vote…')
+    try {
+      const { handle, inputProof } = await encryptVote(
+        GOVERNOR_ADDRESS,
+        address,
+        support,
+      )
+      onStatusChange('Submitting transaction…')
+      await writeContractAsync({
+        address: GOVERNOR_ADDRESS,
+        abi: GOVERNOR_ABI,
+        functionName: 'castVote',
+        args: [id, handle, inputProof],
+      })
+      onStatusChange('Vote submitted.')
+      await onDone()
+    } catch (err) {
+      onStatusChange(`Error: ${(err as Error).message}`)
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-3">
+      <Button onClick={() => cast(1)} disabled={isPending}>
+        For
+      </Button>
+      <Button onClick={() => cast(0)} disabled={isPending} variant="outline">
+        Against
+      </Button>
+      <Button onClick={() => cast(2)} disabled={isPending} variant="ghost">
+        Abstain
+      </Button>
+    </div>
+  )
+}
+
+function Tallies({ handles }: { handles: ProposalHandles }) {
   const {
     data: values,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['tallies', proposalId.toString(), handles],
-    queryFn: () => publicDecryptHandles([...handles!]),
-    enabled: Boolean(handles),
+    queryKey: ['tallies', handles.forVotes, handles.againstVotes, handles.abstainVotes],
+    queryFn: () =>
+      publicDecryptHandles([
+        handles.forVotes,
+        handles.againstVotes,
+        handles.abstainVotes,
+      ]),
     staleTime: Infinity,
   })
 
@@ -204,15 +253,12 @@ function Tallies({ proposalId }: { proposalId: bigint }) {
     { label: 'For', value: forVotes },
     { label: 'Against', value: againstVotes },
     { label: 'Abstain', value: abstainVotes },
-  ]
+  ] as const
 
   return (
     <div className="grid grid-cols-3 gap-4">
       {rows.map((r) => (
-        <div
-          key={r.label}
-          className="rounded-lg border bg-card p-4 text-center"
-        >
+        <div key={r.label} className="rounded-lg border bg-card p-4 text-center">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">
             {r.label}
           </div>

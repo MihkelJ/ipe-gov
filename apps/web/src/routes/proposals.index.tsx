@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAccount, useReadContract, useWriteContract } from 'wagmi'
-import { UnlockConfidentialGovernorABI, addresses } from '@ipe-gov/sdk'
+import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import {
@@ -17,13 +17,11 @@ export const Route = createFileRoute('/proposals/')({
   component: Proposals,
 })
 
-const GOVERNOR = addresses.sepolia.governor as `0x${string}`
-
 function Proposals() {
   const { isConnected } = useAccount()
   const { data: count } = useReadContract({
-    address: GOVERNOR,
-    abi: UnlockConfidentialGovernorABI,
+    address: GOVERNOR_ADDRESS,
+    abi: GOVERNOR_ABI,
     functionName: 'proposalCount',
   })
   const total = count ? Number(count) : 0
@@ -72,8 +70,8 @@ function NewProposalCard() {
     e.preventDefault()
     if (!description.trim()) return
     writeContract({
-      address: GOVERNOR,
-      abi: UnlockConfidentialGovernorABI,
+      address: GOVERNOR_ADDRESS,
+      abi: GOVERNOR_ABI,
       functionName: 'propose',
       args: [description],
     })
