@@ -22,7 +22,7 @@ import { formatCountdown, useBlockCountdown } from '../hooks/useBlockCountdown'
 import { useSponsoredWrite, type WriteParams } from '../hooks/useSponsoredWrite'
 import { useProposal, type ProposalHandles } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
-import RequireEnsMembership from '#/components/RequireEnsMembership'
+import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/proposals/$proposalId')({
@@ -34,9 +34,9 @@ export const Route = createFileRoute('/proposals/$proposalId')({
 
 function ProposalPageGuarded() {
   return (
-    <RequireEnsMembership>
+    <RequireUnlockMembership>
       <ProposalPage />
-    </RequireEnsMembership>
+    </RequireUnlockMembership>
   )
 }
 

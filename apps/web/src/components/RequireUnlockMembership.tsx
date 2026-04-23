@@ -1,9 +1,12 @@
 import { useConnectWallet, usePrivy } from '@privy-io/react-auth'
 import { useAccount } from 'wagmi'
 import { Button } from '#/components/ui/button'
-import { IPECITY_SUFFIX, useEnsMembership } from '#/hooks/useEnsMembership'
+import {
+  UNLOCK_CHECKOUT_URL,
+  useUnlockMembership,
+} from '#/hooks/useUnlockMembership'
 
-export default function RequireEnsMembership({
+export default function RequireUnlockMembership({
   children,
 }: {
   children: React.ReactNode
@@ -11,7 +14,7 @@ export default function RequireEnsMembership({
   const { ready, authenticated, login } = usePrivy()
   const { connectWallet } = useConnectWallet()
   const { address } = useAccount()
-  const { data, isLoading } = useEnsMembership(address)
+  const { isMember, isLoading } = useUnlockMembership(address)
 
   if (!ready) return <Gate>Loading…</Gate>
 
@@ -20,7 +23,7 @@ export default function RequireEnsMembership({
       <Gate>
         <p className="mb-4 text-sm text-muted-foreground">
           Sign in with email, a social account, or a wallet — then connect the
-          wallet that owns your {IPECITY_SUFFIX} subdomain.
+          wallet that holds your membership key.
         </p>
         <Button size="lg" onClick={login}>
           Sign in
@@ -33,8 +36,8 @@ export default function RequireEnsMembership({
     return (
       <Gate>
         <p className="mb-4 text-sm text-muted-foreground">
-          You're signed in. Connect the wallet that holds your{' '}
-          {IPECITY_SUFFIX} subdomain to continue.
+          You're signed in. Connect the wallet that holds your membership key
+          to continue.
         </p>
         <Button size="lg" onClick={connectWallet}>
           Connect wallet
@@ -43,27 +46,19 @@ export default function RequireEnsMembership({
     )
   }
 
-  if (isLoading) return <Gate>Checking {IPECITY_SUFFIX} ownership…</Gate>
+  if (isLoading) return <Gate>Checking membership…</Gate>
 
-  if (!data?.isMember) {
+  if (!isMember) {
     return (
       <Gate>
-        <p className="mb-2 text-sm text-muted-foreground">
-          This wallet has no {IPECITY_SUFFIX} subdomain set as its ENS primary
-          name.
+        <p className="mb-4 text-sm text-muted-foreground">
+          This wallet doesn't hold a valid membership key.
         </p>
-        <p className="text-xs text-muted-foreground">
-          Get a {IPECITY_SUFFIX} subdomain, then set it as your primary name at{' '}
-          <a
-            href="https://app.ens.domains/"
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-4 hover:text-foreground"
-          >
-            app.ens.domains
+        <Button asChild size="lg">
+          <a href={UNLOCK_CHECKOUT_URL} target="_blank" rel="noreferrer">
+            Get membership
           </a>
-          .
-        </p>
+        </Button>
       </Gate>
     )
   }

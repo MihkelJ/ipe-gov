@@ -8,7 +8,7 @@ import { useProposal } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
 import { formatCountdown, useBlockCountdown } from '../hooks/useBlockCountdown'
 import { buildPinMessage, pinDescription } from '../lib/pinApi'
-import RequireEnsMembership from '#/components/RequireEnsMembership'
+import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 
@@ -19,9 +19,9 @@ export const Route = createFileRoute('/proposals/')({
 
 function ProposalsGuarded() {
   return (
-    <RequireEnsMembership>
+    <RequireUnlockMembership>
       <Proposals />
-    </RequireEnsMembership>
+    </RequireUnlockMembership>
   )
 }
 
