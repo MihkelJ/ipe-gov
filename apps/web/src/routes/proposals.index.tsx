@@ -6,7 +6,7 @@ import { useSponsoredWrite } from '../hooks/useSponsoredWrite'
 import { useProposal } from '../lib/useProposal'
 import { useProposalDescription } from '../lib/useProposalDescription'
 import { formatCountdown, useBlockCountdown } from '../lib/useBlockCountdown'
-import { buildPinMessage, pinDescription } from '../server/pinDescription'
+import { buildPinMessage, pinDescription } from '../lib/pinApi'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 

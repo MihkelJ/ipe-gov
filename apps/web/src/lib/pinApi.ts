@@ -1,10 +1,6 @@
 import type { Hex } from 'viem'
 
-/**
- * Client shim for the @ipe-gov/pin-api Cloudflare Worker. Kept at this path so
- * the existing call site (createServerFn-style `pinDescription({ data })`) does
- * not need to change — only the implementation did.
- */
+// Client for the @ipe-gov/pin-api Cloudflare Worker.
 
 const PIN_API_URL = import.meta.env.VITE_PIN_API_URL as string | undefined
 
