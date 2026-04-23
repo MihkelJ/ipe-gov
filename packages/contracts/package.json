@@ -52,7 +52,7 @@
     "ethers": "^6.16.0",
     "globals": "^17.5.0",
     "hardhat": "^2.28.6",
-    "hardhat-deploy": "^0.14.1",
+    "hardhat-deploy": "^0.12.4",
     "hardhat-gas-reporter": "^2.3.0",
     "mocha": "^11.7.5",
     "prettier": "^3.8.3",
