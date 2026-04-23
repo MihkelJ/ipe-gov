@@ -16,7 +16,8 @@
   "dependencies": {
     "@ipe-gov/ipfs": "workspace:*",
     "@ipe-gov/sdk": "workspace:*",
-    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@privy-io/react-auth": "^2.0.0",
+    "@privy-io/wagmi": "^1.0.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-query": "latest",

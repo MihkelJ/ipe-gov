@@ -1,5 +1,5 @@
-import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useState } from 'react'
+import { usePrivy } from '@privy-io/react-auth'
 import { useAccount } from 'wagmi'
 import { zeroAddress, type Hex } from 'viem'
 import { PublicLockABI, addresses } from '@ipe-gov/sdk'
@@ -8,6 +8,7 @@ import { useIsMember } from '#/hooks/useDelegation'
 import { useSponsoredWrite } from '#/hooks/useSponsoredWrite'
 
 export default function ClaimPassport() {
+  const { ready, authenticated, login } = usePrivy()
   const { address, isConnected } = useAccount()
   const { data: hasKey, refetch: refetchKey, isLoading: isCheckingKey } = useIsMember(address)
 
@@ -29,16 +30,12 @@ export default function ClaimPassport() {
     await refetchKey()
   }
 
-  if (!isConnected) {
+  if (!isConnected || !authenticated) {
     return (
       <div className="flex flex-col items-center gap-3">
-        <ConnectButton.Custom>
-          {({ openConnectModal }) => (
-            <Button size="lg" variant="outline" onClick={openConnectModal}>
-              Connect wallet to claim Architect Passport
-            </Button>
-          )}
-        </ConnectButton.Custom>
+        <Button size="lg" variant="outline" onClick={login} disabled={!ready}>
+          Connect wallet to claim Architect Passport
+        </Button>
         <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
           Free · gas sponsored during Ipê Village bootstrap
         </p>
