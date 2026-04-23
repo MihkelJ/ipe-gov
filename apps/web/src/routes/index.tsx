@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from '#/components/ui/button'
-import ClaimPassport from '#/components/ClaimPassport'
 
 export const Route = createFileRoute('/')({ component: Home })
 
@@ -34,7 +33,6 @@ function Home() {
         <Button asChild size="lg">
           <Link to="/proposals">View proposals</Link>
         </Button>
-        <ClaimPassport />
       </div>
     </main>
   )
