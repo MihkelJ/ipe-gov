@@ -10,7 +10,7 @@ export const wagmiConfig = createConfig({
   chains: [sepolia],
   transports: {
     [sepolia.id]: http(
-      import.meta.env.VITE_SEPOLIA_RPC_URL as string | undefined,
+      import.meta.env.VITE_SEPOLIA_RPC_URL,
     ),
   },
 })
