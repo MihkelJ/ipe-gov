@@ -77,6 +77,17 @@ export function useClaimableDelegators(
           functionName: "countedBy",
           args: [proposalId, d],
         } as const,
+        // Liquid delegation is transitive: `_delegators` only tracks one hop,
+        // but `resolveTerminal` walks the full chain. If the caller delegated
+        // onwards, their direct delegators' terminal has moved past them, and
+        // the governor would revert `InvalidDelegator` at claim time. Filter
+        // here so the UI only shows delegators the caller can actually claim.
+        {
+          address: DELEGATION_ADDRESS,
+          abi: DELEGATION_ABI,
+          functionName: "resolveTerminal",
+          args: [d, proposalId],
+        } as const,
       ]),
     [all, proposalId],
   );
@@ -90,16 +101,21 @@ export function useClaimableDelegators(
     if (all.length === 0 || !status.data) {
       return { claimable: [] as Hex[], excluded: [] as Hex[] };
     }
+    const delegateeLower = delegatee?.toLowerCase();
     const claimableOut: Hex[] = [];
     const excludedOut: Hex[] = [];
     for (let i = 0; i < all.length; i++) {
-      const directlyVoted = status.data[i * 2]?.result as boolean | undefined;
-      const countedBy = status.data[i * 2 + 1]?.result as Hex | undefined;
-      const isClaimable = directlyVoted === false && countedBy === zeroAddress;
+      const directlyVoted = status.data[i * 3]?.result as boolean | undefined;
+      const countedBy = status.data[i * 3 + 1]?.result as Hex | undefined;
+      const terminal = status.data[i * 3 + 2]?.result as Hex | undefined;
+      const terminalMatches =
+        terminal && delegateeLower && terminal.toLowerCase() === delegateeLower;
+      const isClaimable =
+        directlyVoted === false && countedBy === zeroAddress && terminalMatches;
       (isClaimable ? claimableOut : excludedOut).push(all[i]);
     }
     return { claimable: claimableOut, excluded: excludedOut };
-  }, [all, status.data]);
+  }, [all, status.data, delegatee]);
 
   return {
     all,

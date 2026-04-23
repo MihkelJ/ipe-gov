@@ -3,7 +3,7 @@ import { encodeFunctionData, type Abi, type Hex } from "viem";
 import { sendCalls, waitForCallsStatus } from "viem/actions";
 import { useWalletClient } from "wagmi";
 
-type WriteParams = {
+export type WriteParams = {
   address: Hex;
   abi: Abi;
   functionName: string;
@@ -33,18 +33,28 @@ export function useSponsoredWrite() {
 
   return useMutation({
     mutationKey: ["sponsoredWrite"],
-    mutationFn: async (params: WriteParams): Promise<Hex> => {
+    mutationFn: async (params: WriteParams | WriteParams[]): Promise<Hex> => {
       if (!walletClient?.account) throw new Error("wallet not connected");
       if (!PAYMASTER_URL) throw new Error("VITE_PAYMASTER_PROXY_URL not set");
 
-      const data = encodeFunctionData({
-        abi: params.abi,
-        functionName: params.functionName,
-        args: params.args,
-      });
+      // Accept either a single write or an array that gets bundled into one
+      // EIP-5792 bundle. Smart wallets + 7702 EOAs execute the bundle
+      // atomically; plain EOAs fall back to sequential txs via viem's
+      // experimental fallback (not atomic, but functionally completes).
+      const paramsArray = Array.isArray(params) ? params : [params];
+      if (paramsArray.length === 0) throw new Error("no calls to send");
+      const calls = paramsArray.map((p) => ({
+        to: p.address,
+        value: 0n,
+        data: encodeFunctionData({
+          abi: p.abi,
+          functionName: p.functionName,
+          args: p.args,
+        }),
+      }));
 
       const { id } = await sendCalls(walletClient, {
-        calls: [{ to: params.address, value: 0n, data }],
+        calls,
         capabilities: {
           paymasterService: { url: PAYMASTER_URL },
         },
