@@ -8,7 +8,7 @@ const SEPOLIA_BLOCK_TIME = 12;
  *  so the display doesn't jump at 12s intervals. Returns null until we have
  *  both the current block and a target. */
 export function useBlockCountdown(endBlock: bigint | undefined): number | null {
-  const { data: currentBlock } = useBlockNumber({ watch: true });
+  const { data: currentBlock, refetch } = useBlockNumber({ watch: true });
   const [syncedAt, setSyncedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
 
@@ -21,14 +21,37 @@ export function useBlockCountdown(endBlock: bigint | undefined): number | null {
     return () => clearInterval(id);
   }, []);
 
-  if (currentBlock === undefined || endBlock === undefined) return null;
-
   const baseSeconds =
-    endBlock > currentBlock
+    currentBlock !== undefined && endBlock !== undefined && endBlock > currentBlock
       ? Number(endBlock - currentBlock) * SEPOLIA_BLOCK_TIME
       : 0;
   const elapsed = Math.floor((now - syncedAt) / 1000);
-  return Math.max(0, baseSeconds - elapsed);
+  const remaining =
+    currentBlock === undefined || endBlock === undefined
+      ? null
+      : Math.max(0, baseSeconds - elapsed);
+
+  // When our local estimate reaches 0 but the chain-side `currentBlock` hasn't
+  // caught up past `endBlock` yet, wagmi's default block-watch cadence (~4s)
+  // leaves downstream `votingClosed` flags stale for several seconds. Poll
+  // aggressively in that window so the UI flips as soon as the closing block
+  // is observable.
+  useEffect(() => {
+    if (
+      remaining !== 0 ||
+      currentBlock === undefined ||
+      endBlock === undefined ||
+      currentBlock > endBlock
+    ) {
+      return;
+    }
+    const id = setInterval(() => {
+      void refetch();
+    }, 1500);
+    return () => clearInterval(id);
+  }, [remaining, currentBlock, endBlock, refetch]);
+
+  return remaining;
 }
 
 /** Format seconds as the two biggest non-zero units. */

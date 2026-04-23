@@ -17,7 +17,7 @@ export const Route = createFileRoute('/proposals/')({
 
 function Proposals() {
   const { isConnected } = useAccount()
-  const { data: count } = useReadContract({
+  const { data: count, refetch: refetchCount } = useReadContract({
     address: GOVERNOR_ADDRESS,
     abi: GOVERNOR_ABI,
     functionName: 'proposalCount',
@@ -39,7 +39,7 @@ function Proposals() {
         </div>
       </header>
 
-      {isConnected ? <NewProposalForm /> : null}
+      {isConnected ? <NewProposalForm onProposed={refetchCount} /> : null}
 
       <section className="mt-10">
         {ids.length === 0 ? (
@@ -134,7 +134,7 @@ function StatusChip({ tone }: { tone: StatusTone }) {
   )
 }
 
-function NewProposalForm() {
+function NewProposalForm({ onProposed }: { onProposed: () => Promise<unknown> }) {
   const { address } = useAccount()
   const [text, setText] = useState('')
   const [status, setStatus] = useState('')
@@ -165,6 +165,9 @@ function NewProposalForm() {
       })
       setStatus('Proposal submitted.')
       setText('')
+      // Refetch proposalCount up the tree so the new motion appears in the
+      // register without a manual reload.
+      await onProposed()
     } catch (err) {
       setStatus(`Error: ${(err as Error).message}`)
     } finally {
