@@ -2,9 +2,6 @@ import type { Hex } from "viem";
 import { useBlockNumber, useReadContract } from "wagmi";
 import { UnlockConfidentialGovernorLiquidABI, addresses } from "@ipe-gov/sdk";
 
-const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex;
-const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI;
-
 export type ProposalHandles = {
   forVotes: Hex;
   againstVotes: Hex;
@@ -27,8 +24,8 @@ export type ProposalState = {
  *  across consumers, so calling this in multiple components is cheap. */
 export function useProposal(id: bigint): ProposalState {
   const { data, isLoading, refetch } = useReadContract({
-    address: GOVERNOR_ADDRESS,
-    abi: GOVERNOR_ABI,
+    address: addresses.sepolia.governorLiquid as Hex,
+    abi: UnlockConfidentialGovernorLiquidABI,
     functionName: "getProposal",
     args: [id],
   });

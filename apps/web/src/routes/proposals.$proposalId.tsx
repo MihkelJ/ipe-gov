@@ -9,11 +9,6 @@ import {
   addresses,
 } from '@ipe-gov/sdk'
 import { encryptVote, publicDecryptHandles } from '../lib/fhevm'
-
-const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex
-const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI
-const DELEGATION_ADDRESS = addresses.sepolia.liquidDelegation as Hex
-const DELEGATION_ABI = LiquidDelegationABI
 import {
   DELEGATE_BATCH_SIZE,
   useClaimableDelegators,
@@ -227,8 +222,8 @@ function FinalizeAction({
     onStatusChange('Submitting finalize transaction…')
     try {
       await sponsoredWrite({
-        address: GOVERNOR_ADDRESS,
-        abi: GOVERNOR_ABI,
+        address: addresses.sepolia.governorLiquid as Hex,
+        abi: UnlockConfidentialGovernorLiquidABI,
         functionName: 'finalize',
         args: [id],
       })
@@ -268,15 +263,15 @@ function VoteAction({
   const { address } = useAccount()
   const { mutateAsync: sponsoredWrite, isPending } = useSponsoredWrite()
   const { data: alreadyDirectlyVoted, refetch: refetchVoted } = useReadContract({
-    address: GOVERNOR_ADDRESS,
-    abi: GOVERNOR_ABI,
+    address: addresses.sepolia.governorLiquid as Hex,
+    abi: UnlockConfidentialGovernorLiquidABI,
     functionName: 'hasDirectlyVoted',
     args: address ? [id, address] : undefined,
     query: { enabled: Boolean(address) },
   })
   const { data: countedByAddr, refetch: refetchCountedBy } = useReadContract({
-    address: GOVERNOR_ADDRESS,
-    abi: GOVERNOR_ABI,
+    address: addresses.sepolia.governorLiquid as Hex,
+    abi: UnlockConfidentialGovernorLiquidABI,
     functionName: 'countedBy',
     args: address ? [id, address] : undefined,
     query: { enabled: Boolean(address) },
@@ -309,23 +304,23 @@ function VoteAction({
       // `FHE.fromExternal`, so one ciphertext can't satisfy both calls. Same
       // plaintext, two proofs. Both bound to (governor, voter).
       const [encSelf, encDelegate] = await Promise.all([
-        encryptVote(GOVERNOR_ADDRESS, address, support),
+        encryptVote(addresses.sepolia.governorLiquid as Hex, address, support),
         hasClaimable
-          ? encryptVote(GOVERNOR_ADDRESS, address, support)
+          ? encryptVote(addresses.sepolia.governorLiquid as Hex, address, support)
           : Promise.resolve(null),
       ])
       const calls: WriteParams[] = []
       if (hasClaimable && encDelegate) {
         calls.push({
-          address: GOVERNOR_ADDRESS,
-          abi: GOVERNOR_ABI,
+          address: addresses.sepolia.governorLiquid as Hex,
+          abi: UnlockConfidentialGovernorLiquidABI,
           functionName: 'castVoteAsDelegate',
           args: [id, encDelegate.handle, encDelegate.inputProof, batch],
         })
       }
       calls.push({
-        address: GOVERNOR_ADDRESS,
-        abi: GOVERNOR_ABI,
+        address: addresses.sepolia.governorLiquid as Hex,
+        abi: UnlockConfidentialGovernorLiquidABI,
         functionName: 'castVote',
         args: [id, encSelf.handle, encSelf.inputProof],
       })
@@ -347,11 +342,11 @@ function VoteAction({
     const batch = claim.claimable.slice(0, DELEGATE_BATCH_SIZE) as readonly Hex[]
     onStatusChange('Encrypting vote…')
     try {
-      const enc = await encryptVote(GOVERNOR_ADDRESS, address, support)
+      const enc = await encryptVote(addresses.sepolia.governorLiquid as Hex, address, support)
       onStatusChange('Submitting transaction…')
       await sponsoredWrite({
-        address: GOVERNOR_ADDRESS,
-        abi: GOVERNOR_ABI,
+        address: addresses.sepolia.governorLiquid as Hex,
+        abi: UnlockConfidentialGovernorLiquidABI,
         functionName: 'castVoteAsDelegate',
         args: [id, enc.handle, enc.inputProof, batch],
       })
@@ -445,8 +440,8 @@ async function doUndelegate(
   onStatusChange('Revoking delegation…')
   try {
     await sponsoredWrite({
-      address: DELEGATION_ADDRESS,
-      abi: DELEGATION_ABI,
+      address: addresses.sepolia.liquidDelegation as Hex,
+      abi: LiquidDelegationABI,
       functionName: 'undelegate',
       args: [id],
     })
@@ -718,8 +713,8 @@ function DelegatePickerBlock({
     onStatusChange('Submitting delegation…')
     try {
       await sponsoredWrite({
-        address: DELEGATION_ADDRESS,
-        abi: DELEGATION_ABI,
+        address: addresses.sepolia.liquidDelegation as Hex,
+        abi: LiquidDelegationABI,
         functionName: 'delegate',
         args: [id, normalized],
       })

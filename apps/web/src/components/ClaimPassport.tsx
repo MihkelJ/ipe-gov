@@ -4,9 +4,6 @@ import { useAccount } from 'wagmi'
 import { zeroAddress, type Hex } from 'viem'
 import { PublicLockABI, addresses } from '@ipe-gov/sdk'
 import { Button } from '#/components/ui/button'
-
-const LOCK_ADDRESS = addresses.sepolia.lock as Hex
-const LOCK_ABI = PublicLockABI
 import { useIsMember } from '#/hooks/useDelegation'
 import { useSponsoredWrite } from '#/hooks/useSponsoredWrite'
 
@@ -23,8 +20,8 @@ export default function ClaimPassport() {
     // keyPrice must be 0 for this path — the paymaster only sponsors gas,
     // not ETH value on the inner call.
     await sponsoredWrite({
-      address: LOCK_ADDRESS,
-      abi: LOCK_ABI,
+      address: addresses.sepolia.lock as Hex,
+      abi: PublicLockABI,
       functionName: 'purchase',
       args: [[0n], [address], [zeroAddress], [zeroAddress], ['0x']],
     })

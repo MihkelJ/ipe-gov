@@ -3,9 +3,6 @@ import { useState } from 'react'
 import type { Hex } from 'viem'
 import { useAccount, useReadContract, useSignMessage } from 'wagmi'
 import { UnlockConfidentialGovernorLiquidABI, addresses } from '@ipe-gov/sdk'
-
-const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex
-const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI
 import { useSponsoredWrite } from '../hooks/useSponsoredWrite'
 import { useProposal } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
@@ -22,8 +19,8 @@ export const Route = createFileRoute('/proposals/')({
 function Proposals() {
   const { isConnected } = useAccount()
   const { data: count, refetch: refetchCount } = useReadContract({
-    address: GOVERNOR_ADDRESS,
-    abi: GOVERNOR_ABI,
+    address: addresses.sepolia.governorLiquid as Hex,
+    abi: UnlockConfidentialGovernorLiquidABI,
     functionName: 'proposalCount',
   })
   const total = count ? Number(count) : 0
@@ -162,8 +159,8 @@ function NewProposalForm({ onProposed }: { onProposed: () => Promise<unknown> })
 
       setStatus('Submitting on-chain proposal…')
       await sponsoredWrite({
-        address: GOVERNOR_ADDRESS,
-        abi: GOVERNOR_ABI,
+        address: addresses.sepolia.governorLiquid as Hex,
+        abi: UnlockConfidentialGovernorLiquidABI,
         functionName: 'propose',
         args: [cid],
       })

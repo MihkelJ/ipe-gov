@@ -3,8 +3,6 @@ import { isAddress, type Hex } from "viem";
 import { useQuery } from "@tanstack/react-query";
 import { addresses } from "@ipe-gov/sdk";
 
-const LOCK_ADDRESS = addresses.sepolia.lock as Hex;
-
 const SUBGRAPH_URL = "https://subgraph.unlock-protocol.com/11155111";
 
 /** Unlock's subgraph stores `expiration` as a decimal BigInt string. "Never"
@@ -34,7 +32,7 @@ type KeysResponse = {
  *  subgraph is the portable path. */
 export function useAllMembers() {
   const query = useQuery({
-    queryKey: ["unlock-members", LOCK_ADDRESS.toLowerCase()],
+    queryKey: ["unlock-members", addresses.sepolia.lock.toLowerCase()],
     staleTime: 60_000,
     queryFn: async (): Promise<Hex[]> => {
       const now = Math.floor(Date.now() / 1000).toString();
@@ -43,7 +41,7 @@ export function useAllMembers() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: MEMBER_QUERY,
-          variables: { lock: LOCK_ADDRESS.toLowerCase(), now },
+          variables: { lock: addresses.sepolia.lock.toLowerCase(), now },
         }),
       });
       if (!res.ok) {

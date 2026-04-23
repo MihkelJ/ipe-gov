@@ -8,13 +8,6 @@ import {
   addresses,
 } from "@ipe-gov/sdk";
 
-const DELEGATION_ADDRESS = addresses.sepolia.liquidDelegation as Hex;
-const DELEGATION_ABI = LiquidDelegationABI;
-const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex;
-const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI;
-const LOCK_ADDRESS = addresses.sepolia.lock as Hex;
-const LOCK_ABI = PublicLockABI;
-
 /** Matches `UnlockConfidentialGovernorLiquid.MAX_DELEGATORS_PER_CALL`. */
 export const DELEGATE_BATCH_SIZE = 64;
 
@@ -26,8 +19,8 @@ const TRANSITIVE_DISPLAY_CAP = 256n;
 /** Current delegatee of `voter` for `proposalId`, or zero address if none. */
 export function useMyDelegate(proposalId: bigint, voter: Hex | undefined) {
   return useReadContract({
-    address: DELEGATION_ADDRESS,
-    abi: DELEGATION_ABI,
+    address: addresses.sepolia.liquidDelegation as Hex,
+    abi: LiquidDelegationABI,
     functionName: "delegateOf",
     args: voter ? [voter, proposalId] : undefined,
     query: { enabled: Boolean(voter) },
@@ -37,8 +30,8 @@ export function useMyDelegate(proposalId: bigint, voter: Hex | undefined) {
 /** Is `voter` a current Unlock key holder? */
 export function useIsMember(voter: Hex | undefined) {
   return useReadContract({
-    address: LOCK_ADDRESS,
-    abi: LOCK_ABI,
+    address: addresses.sepolia.lock as Hex,
+    abi: PublicLockABI,
     functionName: "getHasValidKey",
     args: voter ? [voter] : undefined,
     query: { enabled: Boolean(voter) },
@@ -63,8 +56,8 @@ export function useClaimableDelegators(
   delegatee: Hex | undefined,
 ): Claimability {
   const transitive = useReadContract({
-    address: DELEGATION_ADDRESS,
-    abi: DELEGATION_ABI,
+    address: addresses.sepolia.liquidDelegation as Hex,
+    abi: LiquidDelegationABI,
     functionName: "collectTransitive",
     args: delegatee ? [delegatee, proposalId, TRANSITIVE_DISPLAY_CAP] : undefined,
     query: { enabled: Boolean(delegatee) },
@@ -76,14 +69,14 @@ export function useClaimableDelegators(
     () =>
       all.flatMap((d) => [
         {
-          address: GOVERNOR_ADDRESS,
-          abi: GOVERNOR_ABI,
+          address: addresses.sepolia.governorLiquid as Hex,
+          abi: UnlockConfidentialGovernorLiquidABI,
           functionName: "hasDirectlyVoted",
           args: [proposalId, d],
         } as const,
         {
-          address: GOVERNOR_ADDRESS,
-          abi: GOVERNOR_ABI,
+          address: addresses.sepolia.governorLiquid as Hex,
+          abi: UnlockConfidentialGovernorLiquidABI,
           functionName: "countedBy",
           args: [proposalId, d],
         } as const,
@@ -93,8 +86,8 @@ export function useClaimableDelegators(
         // the governor would revert `InvalidDelegator` at claim time. Filter
         // here so the UI only shows delegators the caller can actually claim.
         {
-          address: DELEGATION_ADDRESS,
-          abi: DELEGATION_ABI,
+          address: addresses.sepolia.liquidDelegation as Hex,
+          abi: LiquidDelegationABI,
           functionName: "resolveTerminal",
           args: [d, proposalId],
         } as const,
@@ -158,16 +151,16 @@ export function useDelegationTargetCheck(
   const isSelf = Boolean(normalizedVoter && normalizedTarget && normalizedVoter === normalizedTarget);
 
   const member = useReadContract({
-    address: LOCK_ADDRESS,
-    abi: LOCK_ABI,
+    address: addresses.sepolia.lock as Hex,
+    abi: PublicLockABI,
     functionName: "getHasValidKey",
     args: target ? [target] : undefined,
     query: { enabled: enabled && !isSelf },
   });
 
   const terminal = useReadContract({
-    address: DELEGATION_ADDRESS,
-    abi: DELEGATION_ABI,
+    address: addresses.sepolia.liquidDelegation as Hex,
+    abi: LiquidDelegationABI,
     functionName: "resolveTerminal",
     args: target ? [target, proposalId] : undefined,
     query: { enabled: enabled && !isSelf },
