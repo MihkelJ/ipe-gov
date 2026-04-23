@@ -108,8 +108,7 @@ describe("UnlockConfidentialGovernor", function () {
 
     await (await governor.finalize(1)).wait();
 
-    const [, , , forVotes, againstVotes, abstainVotes, finalized, descriptionCid] =
-      await governor.getProposal(1);
+    const [, , , forVotes, againstVotes, abstainVotes, finalized, descriptionCid] = await governor.getProposal(1);
     expect(finalized).to.eq(true);
     expect(descriptionCid).to.eq("p1");
 

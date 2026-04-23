@@ -22,11 +22,29 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   console.log(
-    `UnlockConfidentialGovernor: ${governor.address} ` +
-      `(lock: ${lockAddress}, votingPeriod: ${votingPeriod} blocks)`,
+    `UnlockConfidentialGovernor: ${governor.address} ` + `(lock: ${lockAddress}, votingPeriod: ${votingPeriod} blocks)`,
+  );
+
+  const delegation = await deploy("LiquidDelegation", {
+    from: deployer,
+    args: [lockAddress],
+    log: true,
+  });
+
+  console.log(`LiquidDelegation: ${delegation.address} (lock: ${lockAddress})`);
+
+  const governorLiquid = await deploy("UnlockConfidentialGovernorLiquid", {
+    from: deployer,
+    args: [lockAddress, delegation.address, votingPeriod],
+    log: true,
+  });
+
+  console.log(
+    `UnlockConfidentialGovernorLiquid: ${governorLiquid.address} ` +
+      `(lock: ${lockAddress}, delegation: ${delegation.address}, votingPeriod: ${votingPeriod} blocks)`,
   );
 };
 
 export default func;
 func.id = "deploy_unlock_confidential_governor";
-func.tags = ["UnlockConfidentialGovernor"];
+func.tags = ["UnlockConfidentialGovernor", "LiquidDelegation", "UnlockConfidentialGovernorLiquid"];

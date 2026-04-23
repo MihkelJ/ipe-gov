@@ -54,6 +54,10 @@ export function useSponsoredWrite() {
       const result = await waitForCallsStatus(walletClient, {
         id,
         throwOnFailure: true,
+        // viem's default (~60s) trips on ordinary Sepolia+Pimlico inclusion
+        // jitter even when the UserOp does land. Three minutes swallows
+        // that jitter without hiding a genuinely stuck bundle.
+        timeout: 180_000,
       });
 
       const txHash = result.receipts?.[0]?.transactionHash;

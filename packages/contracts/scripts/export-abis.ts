@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const CONTRACTS = ["UnlockConfidentialGovernor"] as const;
+const CONTRACTS = ["UnlockConfidentialGovernor", "UnlockConfidentialGovernorLiquid", "LiquidDelegation"] as const;
 
 /**
  * External ABIs copied from npm packages into the SDK. We emit them with
