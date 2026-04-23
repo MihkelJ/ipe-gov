@@ -10,16 +10,38 @@ const SUBGRAPH_URL = "https://subgraph.unlock-protocol.com/11155111";
  *  larger number — so `expiration_gt: <now>` catches them naturally. */
 const MEMBER_QUERY = /* GraphQL */ `
   query LockKeys($lock: String!, $now: BigInt!) {
-    keys(where: { lock: $lock, expiration_gt: $now }, first: 1000) {
+    keys(
+      where: { lock: $lock, expiration_gt: $now }
+      first: 1000
+      orderBy: createdAtBlock
+      orderDirection: desc
+    ) {
       owner
+      tokenId
       expiration
+      createdAtBlock
     }
   }
 `;
 
+type RawKey = {
+  owner: string;
+  tokenId: string;
+  expiration: string;
+  createdAtBlock: string;
+};
+
 type KeysResponse = {
-  data?: { keys: { owner: string; expiration: string }[] };
+  data?: { keys: RawKey[] };
   errors?: { message: string }[];
+};
+
+export type MemberKey = {
+  owner: Hex;
+  tokenId: string;
+  /** uint256.max for "never expires" */
+  expiration: bigint;
+  createdAtBlock: bigint;
 };
 
 /** Current key holders of the configured Unlock lock.
@@ -34,7 +56,7 @@ export function useAllMembers() {
   const query = useQuery({
     queryKey: ["unlock-members", addresses.sepolia.lock.toLowerCase()],
     staleTime: 60_000,
-    queryFn: async (): Promise<Hex[]> => {
+    queryFn: async (): Promise<MemberKey[]> => {
       const now = Math.floor(Date.now() / 1000).toString();
       const res = await fetch(SUBGRAPH_URL, {
         method: "POST",
@@ -52,18 +74,32 @@ export function useAllMembers() {
         throw new Error(json.errors.map((e) => e.message).join("; "));
       }
       const keys = json.data?.keys ?? [];
-      const unique = new Set<string>();
-      for (const k of keys) {
-        if (isAddress(k.owner)) unique.add(k.owner.toLowerCase());
-      }
-      return Array.from(unique) as Hex[];
+      return keys
+        .filter((k) => isAddress(k.owner))
+        .map<MemberKey>((k) => ({
+          owner: k.owner.toLowerCase() as Hex,
+          tokenId: k.tokenId,
+          expiration: BigInt(k.expiration),
+          createdAtBlock: BigInt(k.createdAtBlock),
+        }));
     },
   });
 
-  const owners = useMemo(() => query.data ?? ([] as readonly Hex[]), [query.data]);
+  const members = useMemo(
+    () => query.data ?? ([] as readonly MemberKey[]),
+    [query.data],
+  );
+
+  /** Backward-compat: deduped list of owner addresses. */
+  const owners = useMemo<readonly Hex[]>(() => {
+    const set = new Set<string>();
+    for (const m of members) set.add(m.owner);
+    return Array.from(set) as Hex[];
+  }, [members]);
 
   return {
     owners,
+    members,
     total: owners.length,
     isLoading: query.isLoading,
     error: query.error,

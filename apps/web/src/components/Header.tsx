@@ -23,6 +23,13 @@ export default function Header() {
           >
             Proposals
           </Link>
+          <Link
+            to="/members"
+            className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
+            activeProps={{ className: 'text-foreground' }}
+          >
+            Members
+          </Link>
           {!ready ? null : !authenticated ? (
             <Button size="sm" onClick={login}>
               Sign in

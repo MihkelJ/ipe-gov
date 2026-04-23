@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProposalsIndexRouteImport } from './routes/proposals.index'
+import { Route as MembersIndexRouteImport } from './routes/members.index'
 import { Route as ProposalsProposalIdRouteImport } from './routes/proposals.$proposalId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const ProposalsIndexRoute = ProposalsIndexRouteImport.update({
   path: '/proposals/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MembersIndexRoute = MembersIndexRouteImport.update({
+  id: '/members/',
+  path: '/members/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProposalsProposalIdRoute = ProposalsProposalIdRouteImport.update({
   id: '/proposals/$proposalId',
   path: '/proposals/$proposalId',
@@ -32,30 +38,34 @@ const ProposalsProposalIdRoute = ProposalsProposalIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
+  '/members/': typeof MembersIndexRoute
   '/proposals/': typeof ProposalsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
+  '/members': typeof MembersIndexRoute
   '/proposals': typeof ProposalsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
+  '/members/': typeof MembersIndexRoute
   '/proposals/': typeof ProposalsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/proposals/$proposalId' | '/proposals/'
+  fullPaths: '/' | '/proposals/$proposalId' | '/members/' | '/proposals/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/proposals/$proposalId' | '/proposals'
-  id: '__root__' | '/' | '/proposals/$proposalId' | '/proposals/'
+  to: '/' | '/proposals/$proposalId' | '/members' | '/proposals'
+  id: '__root__' | '/' | '/proposals/$proposalId' | '/members/' | '/proposals/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProposalsProposalIdRoute: typeof ProposalsProposalIdRoute
+  MembersIndexRoute: typeof MembersIndexRoute
   ProposalsIndexRoute: typeof ProposalsIndexRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProposalsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/members/': {
+      id: '/members/'
+      path: '/members'
+      fullPath: '/members/'
+      preLoaderRoute: typeof MembersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/proposals/$proposalId': {
       id: '/proposals/$proposalId'
       path: '/proposals/$proposalId'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProposalsProposalIdRoute: ProposalsProposalIdRoute,
+  MembersIndexRoute: MembersIndexRoute,
   ProposalsIndexRoute: ProposalsIndexRoute,
 }
 export const routeTree = rootRouteImport
