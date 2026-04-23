@@ -1,16 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import type { Hex } from 'viem'
 import { Copy, ExternalLink, Search } from 'lucide-react'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { useAllMembers, type MemberKey } from '#/hooks/useMembers'
+import { AddressIdentity } from '#/components/AddressIdentity'
+import { useIpecitySubnames } from '#/hooks/useIdentity'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
 import { Badge } from '#/components/ui/badge'
-import {
-  Avatar,
-  AvatarFallback,
-} from '#/components/ui/avatar'
 import {
   Table,
   TableBody,
@@ -65,7 +62,9 @@ const NEVER_THRESHOLD = BigInt(Number.MAX_SAFE_INTEGER)
 const THIRTY_DAYS = 60n * 60n * 24n * 30n
 
 function Members() {
-  const { members, total, isLoading, error, refetch } = useAllMembers()
+  const { data: members = [], isLoading, error, refetch } = useAllMembers()
+  const total = members.length
+  const { data: subnames } = useIpecitySubnames()
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [page, setPage] = useState(1)
@@ -75,8 +74,10 @@ function Members() {
   const visible = useMemo(() => {
     const query = q.trim().toLowerCase()
     return members.filter((m) => {
-      if (query.length > 0 && !m.owner.toLowerCase().startsWith(query)) {
-        return false
+      if (query.length > 0) {
+        const addr = m.owner.toLowerCase()
+        const name = subnames?.get(addr)?.toLowerCase()
+        if (!addr.includes(query) && !name?.includes(query)) return false
       }
       if (filter === 'expiring') {
         if (m.expiration >= NEVER_THRESHOLD) return false
@@ -84,7 +85,7 @@ function Members() {
       }
       return true
     })
-  }, [members, q, filter, nowSec])
+  }, [members, subnames, q, filter, nowSec])
 
   const expiringSoon = useMemo(
     () =>
@@ -137,7 +138,7 @@ function Members() {
               className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
             />
             <Input
-              placeholder="Filter by address prefix…"
+              placeholder="Filter by name or address…"
               value={q}
               onChange={(e) => {
                 setQ(e.target.value)
@@ -278,15 +279,10 @@ function MemberRow({
       </TableCell>
       <TableCell className="py-4 align-middle">
         <div className="flex items-center gap-3">
-          <Avatar size="sm">
-            <AvatarFallback className="font-mono text-[10px] uppercase tracking-wider">
-              {member.owner.slice(-4, -2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="cursor-default font-mono text-sm">
-                {truncateAddress(member.owner)}
+              <span className="cursor-default">
+                <AddressIdentity address={member.owner} size="sm" />
               </span>
             </TooltipTrigger>
             <TooltipContent className="font-mono">{member.owner}</TooltipContent>
@@ -529,10 +525,6 @@ function formatDuration(seconds: bigint): string {
   }
   const years = Math.floor(days / 365)
   return `${years} year${years === 1 ? '' : 's'}`
-}
-
-function truncateAddress(addr: Hex): string {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }
 
 function pageRange(current: number, total: number): number[] {

@@ -22,6 +22,7 @@ import { formatCountdown, useBlockCountdown } from '../hooks/useBlockCountdown'
 import { useSponsoredWrite, type WriteParams } from '../hooks/useSponsoredWrite'
 import { useProposal, type ProposalHandles } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
+import { truncateAddress } from '#/lib/address'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { Button } from '#/components/ui/button'
 
@@ -501,7 +502,7 @@ function VoteBlock({
         <p className="border-l-2 border-foreground/60 pl-4 text-sm italic text-muted-foreground">
           Your vote was already cast by{' '}
           <code className="font-mono not-italic text-foreground/85">
-            {short(countedByAddr)}
+            {truncateAddress(countedByAddr)}
           </code>
           . Casting below overrides that.
         </p>
@@ -585,7 +586,7 @@ function DelegationCertificate({
             Your ballot is held by
           </div>
           <code className="block text-lg font-mono text-foreground">
-            {short(delegate)}
+            {truncateAddress(delegate)}
           </code>
         </div>
         <p className="max-w-md text-sm text-muted-foreground">
@@ -683,7 +684,8 @@ function DelegatePickerBlock({
   const { address } = useAccount()
   const [addr, setAddr] = useState('')
   const { mutateAsync: sponsoredWrite, isPending } = useSponsoredWrite()
-  const members = useAllMembers()
+  const { data: members = [], isLoading: membersLoading } = useAllMembers()
+  const owners = useMemo(() => members.map((m) => m.owner), [members])
   // `all` is the caller's transitive reverse-delegation set — delegating to
   // any of them would cycle. Wagmi dedupes this read with the one in
   // VoteAction's useClaimableDelegators, so calling it here is free.
@@ -701,14 +703,14 @@ function DelegatePickerBlock({
   const filteredMembers = useMemo(() => {
     const self = address?.toLowerCase()
     const query = addr.trim().toLowerCase()
-    return members.owners.filter((owner) => {
+    return owners.filter((owner) => {
       const lower = owner.toLowerCase()
       if (self && lower === self) return false
       if (cycleSet.has(lower)) return false
       if (query.length === 0) return true
       return lower.includes(query)
     })
-  }, [members.owners, address, addr, cycleSet])
+  }, [owners, address, addr, cycleSet])
 
   async function doDelegate() {
     if (!normalized) {
@@ -779,8 +781,8 @@ function DelegatePickerBlock({
       ) : null}
 
       <MemberPickerList
-        isLoading={members.isLoading}
-        totalOwners={members.owners.length}
+        isLoading={membersLoading}
+        totalOwners={owners.length}
         filtered={filteredMembers}
         selectedLower={selectedLower}
         onPick={setAddr}
@@ -838,7 +840,7 @@ function MemberPickerList({
                 : 'text-foreground/85 hover:bg-accent/60 hover:text-foreground'
             }`}
           >
-            <span>{short(owner)}</span>
+            <span>{truncateAddress(owner)}</span>
             {isSelected ? (
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 selected
@@ -1016,8 +1018,4 @@ function describeDelegationReason(
     default:
       return null
   }
-}
-
-function short(addr: Hex) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }

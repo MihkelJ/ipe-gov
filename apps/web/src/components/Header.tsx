@@ -2,12 +2,16 @@ import { Link } from '@tanstack/react-router'
 import { useConnectWallet, usePrivy } from '@privy-io/react-auth'
 import { useAccount } from 'wagmi'
 import { Button } from '#/components/ui/button'
+import { useIdentity } from '#/hooks/useIdentity'
+import { truncateAddress } from '#/lib/address'
 import ThemeToggle from './ThemeToggle'
 
 export default function Header() {
-  const { ready, authenticated, user, login, logout } = usePrivy()
+  const { ready, authenticated, login, logout } = usePrivy()
   const { connectWallet } = useConnectWallet()
   const { address } = useAccount()
+  const { data: displayName } = useIdentity(address)
+  const label = displayName ?? (address ? truncateAddress(address) : 'Signed in')
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
@@ -42,7 +46,7 @@ export default function Header() {
                 </Button>
               ) : null}
               <Button variant="outline" size="sm" onClick={logout}>
-                <span className="font-mono">{identity(address, user)}</span>
+                <span className={displayName ? '' : 'font-mono'}>{label}</span>
                 <span className="ml-2 text-muted-foreground">Sign out</span>
               </Button>
             </>
@@ -52,14 +56,4 @@ export default function Header() {
       </nav>
     </header>
   )
-}
-
-function identity(
-  address: string | undefined,
-  user: ReturnType<typeof usePrivy>['user'],
-) {
-  if (address) return `${address.slice(0, 6)}…${address.slice(-4)}`
-  const email = user?.email?.address
-  if (email) return email
-  return 'Signed in'
 }
