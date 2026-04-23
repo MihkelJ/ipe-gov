@@ -22,14 +22,23 @@ import { formatCountdown, useBlockCountdown } from '../hooks/useBlockCountdown'
 import { useSponsoredWrite, type WriteParams } from '../hooks/useSponsoredWrite'
 import { useProposal, type ProposalHandles } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
+import RequireEnsMembership from '#/components/RequireEnsMembership'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/proposals/$proposalId')({
   head: ({ params }) => ({
     meta: [{ title: `Proposal #${params.proposalId} — ipe-gov` }],
   }),
-  component: ProposalPage,
+  component: ProposalPageGuarded,
 })
+
+function ProposalPageGuarded() {
+  return (
+    <RequireEnsMembership>
+      <ProposalPage />
+    </RequireEnsMembership>
+  )
+}
 
 function ProposalPage() {
   const { proposalId } = Route.useParams()
