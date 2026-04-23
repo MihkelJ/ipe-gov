@@ -1,6 +1,6 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import {
-  coinbaseWallet,
+  baseAccount,
   injectedWallet,
   metaMaskWallet,
   rainbowWallet,
@@ -30,7 +30,7 @@ export const wagmiConfig = getDefaultConfig({
       wallets: [
         rainbowWallet,
         metaMaskWallet,
-        coinbaseWallet,
+        baseAccount,
         walletConnectWallet,
       ],
     },
