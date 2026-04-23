@@ -10,7 +10,7 @@ const ENS_SUBGRAPH_URL = 'https://api.thegraph.com/subgraphs/name/ensdomains/ens
 const SUBNAMES_KEY = ['ipecity-subnames'] as const
 
 // Standalone mainnet client: wagmi is Sepolia-only, ENS lives on L1.
-const ensClient = createPublicClient({ chain: mainnet, transport: http() })
+const ensClient = createPublicClient({ chain: mainnet, transport: http("https://eth.llamarpc.com") })
 
 /** Resolve display name for an address. Precedence:
  *  1. Wrapped `*.ipecity.eth` subname (from ENS subgraph)

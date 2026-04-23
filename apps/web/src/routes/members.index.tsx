@@ -1,8 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Copy, ExternalLink, Search } from 'lucide-react'
+import type { Hex } from 'viem'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { useAllMembers, type MemberKey } from '#/hooks/useMembers'
+import { useMemberBalances } from '#/hooks/useMemberBalances'
+import { tokens } from '@ipe-gov/sdk'
 import { AddressIdentity } from '#/components/AddressIdentity'
 import { useIpecitySubnames } from '#/hooks/useIdentity'
 import { Input } from '#/components/ui/input'
@@ -65,6 +68,11 @@ function Members() {
   const { data: members = [], isLoading, error, refetch } = useAllMembers()
   const total = members.length
   const { data: subnames } = useIpecitySubnames()
+  const {
+    balances,
+    isLoading: balancesLoading,
+    isError: balancesError,
+  } = useMemberBalances(members)
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [page, setPage] = useState(1)
@@ -73,7 +81,7 @@ function Members() {
 
   const visible = useMemo(() => {
     const query = q.trim().toLowerCase()
-    return members.filter((m) => {
+    const filtered = members.filter((m) => {
       if (query.length > 0) {
         const addr = m.owner.toLowerCase()
         const name = subnames?.get(addr)?.toLowerCase()
@@ -85,7 +93,20 @@ function Members() {
       }
       return true
     })
-  }, [members, subnames, q, filter, nowSec])
+    // Sort by IPE balance desc; unknown balances sink to the bottom, with
+    // tokenId asc as the tiebreaker so ordering stays stable for zero/unknown.
+    return [...filtered].sort((a, b) => {
+      const ba = balances.get(a.owner.toLowerCase() as Hex)
+      const bb = balances.get(b.owner.toLowerCase() as Hex)
+      if (ba === undefined && bb === undefined) {
+        return Number(BigInt(a.tokenId) - BigInt(b.tokenId))
+      }
+      if (ba === undefined) return 1
+      if (bb === undefined) return -1
+      if (ba === bb) return Number(BigInt(a.tokenId) - BigInt(b.tokenId))
+      return bb > ba ? 1 : -1
+    })
+  }, [members, subnames, q, filter, nowSec, balances])
 
   const expiringSoon = useMemo(
     () =>
@@ -170,7 +191,14 @@ function Members() {
           <EmptyState hasQuery={q.length > 0 || filter !== 'all'} />
         ) : (
           <>
-            <RegisterTable members={paged} startIndex={offset} nowSec={nowSec} />
+            <RegisterTable
+              members={paged}
+              startIndex={offset}
+              nowSec={nowSec}
+              balances={balances}
+              balancesLoading={balancesLoading}
+              balancesError={balancesError}
+            />
             {pageCount > 1 ? (
               <RegisterPagination
                 page={safePage}
@@ -204,10 +232,16 @@ function RegisterTable({
   members,
   startIndex,
   nowSec,
+  balances,
+  balancesLoading,
+  balancesError,
 }: {
   members: readonly MemberKey[]
   startIndex: number
   nowSec: bigint
+  balances: Map<Hex, bigint>
+  balancesLoading: boolean
+  balancesError: boolean
 }) {
   return (
     <div className="border-y border-border">
@@ -219,6 +253,9 @@ function RegisterTable({
             </TableHead>
             <TableHead className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Holder
+            </TableHead>
+            <TableHead className="hidden text-right font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
+              {tokens.base.ipe.symbol}
             </TableHead>
             <TableHead className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:table-cell">
               Key
@@ -241,6 +278,9 @@ function RegisterTable({
               index={startIndex + i + 1}
               member={m}
               nowSec={nowSec}
+              balance={balances.get(m.owner.toLowerCase() as Hex)}
+              balancesLoading={balancesLoading}
+              balancesError={balancesError}
             />
           ))}
         </TableBody>
@@ -253,10 +293,16 @@ function MemberRow({
   index,
   member,
   nowSec,
+  balance,
+  balancesLoading,
+  balancesError,
 }: {
   index: number
   member: MemberKey
   nowSec: bigint
+  balance: bigint | undefined
+  balancesLoading: boolean
+  balancesError: boolean
 }) {
   const [copied, setCopied] = useState(false)
   const expires = describeExpiry(member.expiration, nowSec)
@@ -324,6 +370,17 @@ function MemberRow({
             </Tooltip>
           </div>
         </div>
+      </TableCell>
+      <TableCell className="hidden py-4 text-right align-middle font-mono text-xs tabular-nums sm:table-cell">
+        {balance !== undefined ? (
+          formatIpe(balance, tokens.base.ipe.decimals)
+        ) : balancesLoading ? (
+          <Skeleton className="ml-auto h-4 w-14" />
+        ) : balancesError ? (
+          <span className="text-muted-foreground">—</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell className="hidden py-4 align-middle font-mono text-xs text-muted-foreground sm:table-cell">
         #{member.tokenId}
@@ -525,6 +582,13 @@ function formatDuration(seconds: bigint): string {
   }
   const years = Math.floor(days / 365)
   return `${years} year${years === 1 ? '' : 's'}`
+}
+
+function formatIpe(balance: bigint, decimals: number): string {
+  if (balance === 0n) return '0'
+  const num = Number(balance) / 10 ** decimals
+  if (num > 0 && num < 0.01) return '<0.01'
+  return num.toLocaleString(undefined, { maximumFractionDigits: 2 })
 }
 
 function pageRange(current: number, total: number): number[] {
