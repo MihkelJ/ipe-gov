@@ -3,9 +3,17 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { isAddress, zeroAddress, type Hex } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
+import {
+  LiquidDelegationABI,
+  UnlockConfidentialGovernorLiquidABI,
+  addresses,
+} from '@ipe-gov/sdk'
 import { encryptVote, publicDecryptHandles } from '../lib/fhevm'
-import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
-import { DELEGATION_ABI, DELEGATION_ADDRESS } from '../lib/delegation'
+
+const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex
+const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI
+const DELEGATION_ADDRESS = addresses.sepolia.liquidDelegation as Hex
+const DELEGATION_ABI = LiquidDelegationABI
 import {
   DELEGATE_BATCH_SIZE,
   useClaimableDelegators,

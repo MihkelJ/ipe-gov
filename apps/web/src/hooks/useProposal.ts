@@ -1,6 +1,9 @@
 import type { Hex } from "viem";
 import { useBlockNumber, useReadContract } from "wagmi";
-import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from "../lib/governor";
+import { UnlockConfidentialGovernorLiquidABI, addresses } from "@ipe-gov/sdk";
+
+const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex;
+const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI;
 
 export type ProposalHandles = {
   forVotes: Hex;

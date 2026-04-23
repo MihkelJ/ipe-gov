@@ -1,9 +1,12 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { zeroAddress } from 'viem'
+import { zeroAddress, type Hex } from 'viem'
+import { PublicLockABI, addresses } from '@ipe-gov/sdk'
 import { Button } from '#/components/ui/button'
-import { LOCK_ABI, LOCK_ADDRESS } from '#/lib/lock'
+
+const LOCK_ADDRESS = addresses.sepolia.lock as Hex
+const LOCK_ABI = PublicLockABI
 import { useIsMember } from '#/hooks/useDelegation'
 import { useSponsoredWrite } from '#/hooks/useSponsoredWrite'
 

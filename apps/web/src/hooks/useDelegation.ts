@@ -1,9 +1,19 @@
 import { useMemo } from "react";
 import { zeroAddress, type Hex } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
-import { DELEGATION_ABI, DELEGATION_ADDRESS } from "../lib/delegation";
-import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from "../lib/governor";
-import { LOCK_ABI, LOCK_ADDRESS } from "../lib/lock";
+import {
+  LiquidDelegationABI,
+  PublicLockABI,
+  UnlockConfidentialGovernorLiquidABI,
+  addresses,
+} from "@ipe-gov/sdk";
+
+const DELEGATION_ADDRESS = addresses.sepolia.liquidDelegation as Hex;
+const DELEGATION_ABI = LiquidDelegationABI;
+const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex;
+const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI;
+const LOCK_ADDRESS = addresses.sepolia.lock as Hex;
+const LOCK_ABI = PublicLockABI;
 
 /** Matches `UnlockConfidentialGovernorLiquid.MAX_DELEGATORS_PER_CALL`. */
 export const DELEGATE_BATCH_SIZE = 64;

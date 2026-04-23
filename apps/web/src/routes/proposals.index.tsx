@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
+import type { Hex } from 'viem'
 import { useAccount, useReadContract, useSignMessage } from 'wagmi'
-import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from '../lib/governor'
+import { UnlockConfidentialGovernorLiquidABI, addresses } from '@ipe-gov/sdk'
+
+const GOVERNOR_ADDRESS = addresses.sepolia.governorLiquid as Hex
+const GOVERNOR_ABI = UnlockConfidentialGovernorLiquidABI
 import { useSponsoredWrite } from '../hooks/useSponsoredWrite'
 import { useProposal } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
