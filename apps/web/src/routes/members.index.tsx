@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Copy, ExternalLink, Search } from 'lucide-react'
-import type { Hex } from 'viem'
+import { formatUnits, type Hex } from 'viem'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { useAllMembers, type MemberKey } from '#/hooks/useMembers'
 import { useMemberBalances } from '#/hooks/useMemberBalances'
@@ -373,7 +373,7 @@ function MemberRow({
       </TableCell>
       <TableCell className="hidden py-4 text-right align-middle font-mono text-xs tabular-nums sm:table-cell">
         {balance !== undefined ? (
-          formatIpe(balance, tokens.base.ipe.decimals)
+          formatToken(balance, tokens.base.ipe.decimals)
         ) : balancesLoading ? (
           <Skeleton className="ml-auto h-4 w-14" />
         ) : balancesError ? (
@@ -584,9 +584,9 @@ function formatDuration(seconds: bigint): string {
   return `${years} year${years === 1 ? '' : 's'}`
 }
 
-function formatIpe(balance: bigint, decimals: number): string {
-  if (balance === 0n) return '0'
-  const num = Number(balance) / 10 ** decimals
+function formatToken(amount: bigint, decimals: number): string {
+  if (amount === 0n) return '0'
+  const num = Number(formatUnits(amount, decimals))
   if (num > 0 && num < 0.01) return '<0.01'
   return num.toLocaleString(undefined, { maximumFractionDigits: 2 })
 }
