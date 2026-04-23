@@ -1,0 +1,11 @@
+# Local dev secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored).
+# For production, set these with `wrangler secret put <NAME>`.
+
+# Pimlico API key — https://dashboard.pimlico.io/
+PIMLICO_API_KEY=
+
+# Sepolia RPC URL (used to verify Unlock membership keys)
+SEPOLIA_RPC_URL=
+
+# Comma-separated CORS allowlist (optional; defaults handled in code)
+ALLOWED_ORIGINS=http://localhost:5173

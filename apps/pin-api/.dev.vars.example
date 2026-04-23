@@ -1,0 +1,11 @@
+# Local dev secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored).
+# For production, set these with `wrangler secret put <NAME>`.
+
+# Pinata JWT for pinning to IPFS — https://app.pinata.cloud/developers/api-keys
+PINATA_JWT=
+
+# Sepolia RPC URL (used to validate membership keys before pinning)
+SEPOLIA_RPC_URL=
+
+# Comma-separated CORS allowlist (optional; defaults handled in code)
+ALLOWED_ORIGINS=http://localhost:5173
