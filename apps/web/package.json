@@ -10,7 +10,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "deploy": "wrangler pages deploy"
+    "deploy": "wrangler pages deploy --branch=main --commit-dirty=true",
+    "deploy:preview": "wrangler pages deploy --commit-dirty=true"
   },
   "dependencies": {
     "@ipe-gov/ipfs": "workspace:*",
