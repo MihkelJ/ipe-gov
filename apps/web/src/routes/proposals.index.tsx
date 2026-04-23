@@ -8,13 +8,22 @@ import { useProposal } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
 import { formatCountdown, useBlockCountdown } from '../hooks/useBlockCountdown'
 import { buildPinMessage, pinDescription } from '../lib/pinApi'
+import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 
 export const Route = createFileRoute('/proposals/')({
   head: () => ({ meta: [{ title: 'Proposals — ipe-gov' }] }),
-  component: Proposals,
+  component: ProposalsGuarded,
 })
+
+function ProposalsGuarded() {
+  return (
+    <RequireUnlockMembership>
+      <Proposals />
+    </RequireUnlockMembership>
+  )
+}
 
 function Proposals() {
   const { isConnected } = useAccount()

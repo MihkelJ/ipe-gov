@@ -12,12 +12,12 @@
   },
   "dependencies": {
     "@ipe-gov/sdk": "workspace:*",
-    "hono": "^4.6.14",
-    "viem": "^2.21.0"
+    "hono": "^4.12.14",
+    "viem": "^2.48.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251022.0",
-    "typescript": "^5.7.2",
-    "wrangler": "^4.0.0"
+    "@cloudflare/workers-types": "^4.20260423.1",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.84.1"
   }
 }

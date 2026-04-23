@@ -2,7 +2,7 @@
   "name": "ipe-gov",
   "private": true,
   "version": "0.0.0",
-  "packageManager": "pnpm@10.26.1",
+  "packageManager": "pnpm@10.33.2",
   "engines": {
     "node": ">=20"
   },
@@ -15,8 +15,8 @@
     "deploy:sepolia": "turbo run deploy:sepolia"
   },
   "devDependencies": {
-    "turbo": "^2.5.0",
-    "typescript": "^5.7.2"
+    "turbo": "^2.9.6",
+    "typescript": "^5.9.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
