@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { isAddress, type Hex } from "viem";
 import { useQuery } from "@tanstack/react-query";
-import { LOCK_ADDRESS } from "./lock";
+import { LOCK_ADDRESS } from "../lib/lock";
 
 const SUBGRAPH_URL = "https://subgraph.unlock-protocol.com/11155111";
 

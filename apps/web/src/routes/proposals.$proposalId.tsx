@@ -13,12 +13,12 @@ import {
   useIsMember,
   useMyDelegate,
   type DelegationTargetReason,
-} from '../lib/useDelegation'
-import { useAllMembers } from '../lib/useMembers'
-import { formatCountdown, useBlockCountdown } from '../lib/useBlockCountdown'
+} from '../hooks/useDelegation'
+import { useAllMembers } from '../hooks/useMembers'
+import { formatCountdown, useBlockCountdown } from '../hooks/useBlockCountdown'
 import { useSponsoredWrite, type WriteParams } from '../hooks/useSponsoredWrite'
-import { useProposal, type ProposalHandles } from '../lib/useProposal'
-import { useProposalDescription } from '../lib/useProposalDescription'
+import { useProposal, type ProposalHandles } from '../hooks/useProposal'
+import { useProposalDescription } from '../hooks/useProposalDescription'
 import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/proposals/$proposalId')({

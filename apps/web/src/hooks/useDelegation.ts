@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { zeroAddress, type Hex } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
-import { DELEGATION_ABI, DELEGATION_ADDRESS } from "./delegation";
-import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from "./governor";
-import { LOCK_ABI, LOCK_ADDRESS } from "./lock";
+import { DELEGATION_ABI, DELEGATION_ADDRESS } from "../lib/delegation";
+import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from "../lib/governor";
+import { LOCK_ABI, LOCK_ADDRESS } from "../lib/lock";
 
 /** Matches `UnlockConfidentialGovernorLiquid.MAX_DELEGATORS_PER_CALL`. */
 export const DELEGATE_BATCH_SIZE = 64;

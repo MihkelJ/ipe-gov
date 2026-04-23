@@ -1,6 +1,6 @@
 import type { Hex } from "viem";
 import { useBlockNumber, useReadContract } from "wagmi";
-import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from "./governor";
+import { GOVERNOR_ABI, GOVERNOR_ADDRESS } from "../lib/governor";
 
 export type ProposalHandles = {
   forVotes: Hex;

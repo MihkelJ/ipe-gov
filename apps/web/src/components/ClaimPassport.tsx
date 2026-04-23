@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi'
 import { zeroAddress } from 'viem'
 import { Button } from '#/components/ui/button'
 import { LOCK_ABI, LOCK_ADDRESS } from '#/lib/lock'
-import { useIsMember } from '#/lib/useDelegation'
+import { useIsMember } from '#/hooks/useDelegation'
 import { useSponsoredWrite } from '#/hooks/useSponsoredWrite'
 
 export default function ClaimPassport() {
