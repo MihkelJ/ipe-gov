@@ -45,9 +45,9 @@ createRoot(rootEl).render(
         // Array order drives modal order — web2 methods first, wallet last,
         // so new users see the friendly path before the crypto path. Each
         // method must also be enabled in the Privy dashboard.
-        loginMethods: ['email', 'google', 'apple', 'twitter', 'wallet'],
+        loginMethods: ['email', 'google', 'wallet'],
         embeddedWallets: {
-          ethereum: { createOnLogin: 'off' },
+          ethereum: { createOnLogin: 'users-without-wallets' },
         },
       }}
     >
