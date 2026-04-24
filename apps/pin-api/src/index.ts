@@ -36,7 +36,7 @@ const PinRequestSchema = z.object({
     (v) => isHex(v),
     "invalid signature",
   ),
-  message: z.string().min(1).max(4_000),
+  message: z.string().min(1),
   body: ProposalBodySchema.optional(),
 });
 

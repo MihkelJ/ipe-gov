@@ -90,13 +90,18 @@ function NewProposalPage() {
     (m) => m.date || m.amount.trim() || m.detail.trim(),
   )
 
+  // Cost breakdown is optional — some proposals don't ask for funding. If any
+  // lines are partially filled, though, they must sum to a positive amount.
+  // A funding timeline is only required when there's a cost breakdown to
+  // schedule; proposals without costs can omit it.
+  const costsValid = filledCostLines.length === 0 || totalCost > 0
+  const timelineRequired = filledCostLines.length > 0
   const completion = {
     motion: headlineTrim.length > 0 && !headlineOver,
     problem: problem.trim().length >= 40,
     solution: solution.trim().length >= 40,
-    costs: filledCostLines.length > 0 && totalCost > 0,
     outcomes: outcomes.trim().length >= 40,
-    timeline: filledMilestones.length > 0,
+    timeline: !timelineRequired || filledMilestones.length > 0,
     authors: true, // lead author always present
   }
   const completeCount = Object.values(completion).filter(Boolean).length
@@ -106,9 +111,9 @@ function NewProposalPage() {
     completion.motion &&
     completion.problem &&
     completion.solution &&
-    completion.costs &&
     completion.outcomes &&
     completion.timeline &&
+    costsValid &&
     !busy
 
   async function submit(e: React.FormEvent) {
@@ -588,7 +593,7 @@ function NewProposalPage() {
               ) : canSubmit ? (
                 'Ready to file'
               ) : (
-                `Complete all sections (${completeCount} / 7)`
+                `Complete all sections (${completeCount} / 6)`
               )}
             </div>
             <div className="flex items-center gap-4">
@@ -652,7 +657,6 @@ function NewProposalPage() {
                   ['motion', 'Motion headline'],
                   ['problem', 'Problem statement'],
                   ['solution', 'Proposed solution'],
-                  ['costs', 'Cost breakdown'],
                   ['outcomes', 'Community outcomes'],
                   ['timeline', 'Funding timeline'],
                   ['authors', 'Authors'],

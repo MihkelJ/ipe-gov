@@ -29,20 +29,27 @@ const milestoneSchema = z.object({
  *  derived from this schema, and `safeParse` is used by the pin-api Worker to
  *  validate incoming requests before pinning. Keep schema and type in lockstep
  *  by always exporting the inferred type, never a hand-written one. */
-export const ProposalBodySchema = z.object({
-  schema: z.literal("ipe-gov.proposal-body/1"),
-  headline: z.string().min(1).max(MAX_PROSE),
-  problem: z.string().min(1).max(MAX_PROSE),
-  solution: z.string().min(1).max(MAX_PROSE),
-  outcomes: z.string().min(1).max(MAX_PROSE),
-  credentials: z.string().max(MAX_PROSE).optional(),
-  costs: z.array(costLineSchema).min(1).max(200),
-  totalCost: z.number().finite().nonnegative(),
-  milestones: z.array(milestoneSchema).min(1).max(200),
-  authors: z.object({
-    lead: addressSchema,
-    coAuthors: z.array(addressSchema).max(200),
-  }),
-});
+export const ProposalBodySchema = z
+  .object({
+    schema: z.literal("ipe-gov.proposal-body/1"),
+    headline: z.string().min(1).max(MAX_PROSE),
+    problem: z.string().min(1).max(MAX_PROSE),
+    solution: z.string().min(1).max(MAX_PROSE),
+    outcomes: z.string().min(1).max(MAX_PROSE),
+    credentials: z.string().max(MAX_PROSE).optional(),
+    costs: z.array(costLineSchema).max(200),
+    totalCost: z.number().finite().nonnegative(),
+    milestones: z.array(milestoneSchema).max(200),
+    authors: z.object({
+      lead: addressSchema,
+      coAuthors: z.array(addressSchema).max(200),
+    }),
+  })
+  // A funding timeline is only required when there's a cost breakdown to
+  // schedule. Proposals without monetary asks can omit both.
+  .refine((b) => b.costs.length === 0 || b.milestones.length > 0, {
+    message: "funding timeline is required when a cost breakdown is present",
+    path: ["milestones"],
+  });
 
 export type ProposalBody = z.infer<typeof ProposalBodySchema>;
