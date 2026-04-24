@@ -4,7 +4,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { WagmiProvider } from '@privy-io/wagmi'
-
+import { base, sepolia } from 'viem/chains'
 import { getRouter } from './router'
 import { getContext } from './integrations/tanstack-query/root-provider'
 import { wagmiConfig } from './lib/wagmi'
@@ -46,6 +46,10 @@ createRoot(rootEl).render(
         // so new users see the friendly path before the crypto path. Each
         // method must also be enabled in the Privy dashboard.
         loginMethods: ['email', 'google', 'wallet'],
+        // Pin external wallets to Sepolia on connect; governance contracts
+        // live there. Base is still allowed for the read-only IPE balance.
+        defaultChain: sepolia,
+        supportedChains: [sepolia, base],
         embeddedWallets: {
           ethereum: { createOnLogin: 'users-without-wallets' },
         },

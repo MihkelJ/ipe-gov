@@ -82,3 +82,14 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+@keyframes ballot-sweep {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes ballot-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}

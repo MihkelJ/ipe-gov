@@ -269,6 +269,9 @@ function FinalizeAction({
   )
 }
 
+type BallotStage = 'encrypting' | 'submitting' | 'sealed'
+type BallotBusy = { choice: 0 | 1 | 2; stage: BallotStage } | null
+
 function VoteAction({
   id,
   onStatusChange,
@@ -280,6 +283,7 @@ function VoteAction({
 }) {
   const { address } = useAccount()
   const { mutateAsync: sponsoredWrite, isPending } = useSponsoredWrite()
+  const [busy, setBusy] = useState<BallotBusy>(null)
   const { data: alreadyDirectlyVoted, refetch: refetchVoted } = useReadContract({
     address: addresses.sepolia.governorLiquid as Hex,
     abi: UnlockConfidentialGovernorLiquidABI,
@@ -316,6 +320,7 @@ function VoteAction({
   async function castBundled(support: 0 | 1 | 2) {
     if (!address) return
     const batch = claim.claimable.slice(0, DELEGATE_BATCH_SIZE) as readonly Hex[]
+    setBusy({ choice: support, stage: 'encrypting' })
     onStatusChange('Encrypting vote…')
     try {
       // Two independent encryptions: FHEVM's inputProof is consumed on first
@@ -342,8 +347,10 @@ function VoteAction({
         functionName: 'castVote',
         args: [id, encSelf.handle, encSelf.inputProof],
       })
+      setBusy({ choice: support, stage: 'submitting' })
       onStatusChange('Submitting transaction…')
       await sponsoredWrite(calls)
+      setBusy({ choice: support, stage: 'sealed' })
       onStatusChange(
         hasClaimable
           ? `Voted and claimed ${batch.length} delegator${batch.length === 1 ? '' : 's'}.`
@@ -351,6 +358,7 @@ function VoteAction({
       )
       await refresh()
     } catch (err) {
+      setBusy(null)
       onStatusChange(`Error: ${(err as Error).message}`)
     }
   }
@@ -358,9 +366,11 @@ function VoteAction({
   async function castClaimOnly(support: 0 | 1 | 2) {
     if (!address || !hasClaimable) return
     const batch = claim.claimable.slice(0, DELEGATE_BATCH_SIZE) as readonly Hex[]
+    setBusy({ choice: support, stage: 'encrypting' })
     onStatusChange('Encrypting vote…')
     try {
       const enc = await encryptVote(addresses.sepolia.governorLiquid as Hex, address, support)
+      setBusy({ choice: support, stage: 'submitting' })
       onStatusChange('Submitting transaction…')
       await sponsoredWrite({
         address: addresses.sepolia.governorLiquid as Hex,
@@ -368,11 +378,13 @@ function VoteAction({
         functionName: 'castVoteAsDelegate',
         args: [id, enc.handle, enc.inputProof, batch],
       })
+      setBusy({ choice: support, stage: 'sealed' })
       onStatusChange(
         `Claimed ${batch.length} delegator${batch.length === 1 ? '' : 's'}.`,
       )
       await refresh()
     } catch (err) {
+      setBusy(null)
       onStatusChange(`Error: ${(err as Error).message}`)
     }
   }
@@ -401,6 +413,7 @@ function VoteAction({
     primary = (
       <VoteBlock
         isPending={isPending}
+        busy={busy}
         hasClaimable={hasClaimable}
         hasExcluded={hasExcluded}
         countedByDelegate={Boolean(countedByDelegate)}
@@ -420,6 +433,7 @@ function VoteAction({
     secondary = (
       <ClaimOnlyBlock
         isPending={isPending}
+        busy={busy}
         claimableCount={claim.claimable.length}
         excludedCount={claim.excluded.length}
         overflow={overflow}
@@ -476,6 +490,7 @@ async function doUndelegate(
 
 function VoteBlock({
   isPending,
+  busy,
   hasClaimable,
   hasExcluded,
   countedByDelegate,
@@ -486,6 +501,7 @@ function VoteBlock({
   onVote,
 }: {
   isPending: boolean
+  busy: BallotBusy
   hasClaimable: boolean
   hasExcluded: boolean
   countedByDelegate: boolean
@@ -533,9 +549,22 @@ function VoteBlock({
       ) : null}
 
       <div className="grid grid-cols-3 gap-3">
-        <ChoiceButton label="For" index={1} onClick={() => onVote(1)} disabled={isPending} primary />
-        <ChoiceButton label="Against" index={0} onClick={() => onVote(0)} disabled={isPending} />
-        <ChoiceButton label="Abstain" index={2} onClick={() => onVote(2)} disabled={isPending} />
+        {([
+          { label: 'For', index: 1, primary: true },
+          { label: 'Against', index: 0, primary: false },
+          { label: 'Abstain', index: 2, primary: false },
+        ] as const).map((c) => (
+          <ChoiceButton
+            key={c.index}
+            label={c.label}
+            index={c.index}
+            onClick={() => onVote(c.index)}
+            disabled={isPending || busy !== null}
+            primary={c.primary}
+            busyStage={busy?.choice === c.index ? busy.stage : undefined}
+            dimmed={busy !== null && busy.choice !== c.index}
+          />
+        ))}
       </div>
     </div>
   )
@@ -547,29 +576,85 @@ function ChoiceButton({
   onClick,
   disabled,
   primary,
+  busyStage,
+  dimmed,
 }: {
   label: string
   index: 0 | 1 | 2
   onClick: () => void
   disabled: boolean
   primary?: boolean
+  busyStage?: BallotStage
+  dimmed?: boolean
 }) {
   const base =
-    'group flex flex-col items-start gap-3 border px-5 py-5 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-  const chrome = primary
+    'group relative flex flex-col items-start gap-3 overflow-hidden border px-5 py-5 text-left transition-all duration-500 disabled:cursor-not-allowed'
+  const idle = primary
     ? 'border-foreground bg-foreground text-background hover:bg-foreground/90'
     : 'border-border bg-transparent text-foreground hover:border-foreground/70 hover:bg-accent'
+  const active = primary
+    ? 'border-foreground bg-foreground text-background'
+    : 'border-foreground bg-accent text-foreground'
+  const dim = 'border-border/40 bg-transparent text-foreground/25 saturate-0'
+  const chrome = busyStage ? active : dimmed ? dim : idle
+
+  const topLabel = busyStage ?? (index === 1 ? 'yea' : index === 0 ? 'nay' : 'abstain')
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-busy={Boolean(busyStage)}
       className={`${base} ${chrome}`}
     >
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">
-        {index === 1 ? 'yea' : index === 0 ? 'nay' : 'abstain'}
+      {busyStage && busyStage !== 'sealed' ? (
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute inset-y-0 left-0 w-[2px] [animation:ballot-sweep_1.8s_cubic-bezier(.55,0,.45,1)_infinite] ${
+            primary ? 'bg-background/80' : 'bg-foreground/70'
+          }`}
+        />
+      ) : null}
+
+      <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">
+        {busyStage ? (
+          <span
+            aria-hidden
+            className={`inline-block h-1.5 w-1.5 rotate-45 ${
+              busyStage === 'sealed' ? '' : '[animation:ballot-pulse_1.2s_ease-in-out_infinite]'
+            } ${primary ? 'bg-background' : 'bg-foreground'}`}
+          />
+        ) : null}
+        <span>{topLabel}</span>
       </span>
+
       <span className="text-2xl font-semibold tracking-tight">{label}</span>
+
+      {busyStage ? (
+        <span
+          aria-hidden
+          className="flex gap-1 font-mono text-[11px] leading-none tracking-[0.28em]"
+        >
+          {([0, 1, 2] as const).map((i) => {
+            const filled =
+              i <
+              (busyStage === 'encrypting'
+                ? 1
+                : busyStage === 'submitting'
+                  ? 2
+                  : 3)
+            return (
+              <span
+                key={i}
+                className={`transition-opacity duration-300 ${filled ? 'opacity-100' : 'opacity-25'}`}
+              >
+                ◆
+              </span>
+            )
+          })}
+        </span>
+      ) : null}
     </button>
   )
 }
@@ -631,12 +716,14 @@ function SealedBlock({ children }: { children: React.ReactNode }) {
 
 function ClaimOnlyBlock({
   isPending,
+  busy,
   claimableCount,
   excludedCount,
   overflow,
   onClaim,
 }: {
   isPending: boolean
+  busy: BallotBusy
   claimableCount: number
   excludedCount: number
   overflow: boolean
@@ -657,24 +744,21 @@ function ClaimOnlyBlock({
         </p>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <ChoiceButton
-          label="Claim as For"
-          index={1}
-          onClick={() => onClaim(1)}
-          disabled={isPending}
-        />
-        <ChoiceButton
-          label="Claim as Against"
-          index={0}
-          onClick={() => onClaim(0)}
-          disabled={isPending}
-        />
-        <ChoiceButton
-          label="Claim as Abstain"
-          index={2}
-          onClick={() => onClaim(2)}
-          disabled={isPending}
-        />
+        {([
+          { label: 'Claim as For', index: 1 },
+          { label: 'Claim as Against', index: 0 },
+          { label: 'Claim as Abstain', index: 2 },
+        ] as const).map((c) => (
+          <ChoiceButton
+            key={c.index}
+            label={c.label}
+            index={c.index}
+            onClick={() => onClaim(c.index)}
+            disabled={isPending || busy !== null}
+            busyStage={busy?.choice === c.index ? busy.stage : undefined}
+            dimmed={busy !== null && busy.choice !== c.index}
+          />
+        ))}
       </div>
     </div>
   )
