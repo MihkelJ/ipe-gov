@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { isAddress, zeroAddress, type Hex } from 'viem'
+import { isAddress, zeroAddress, type Address, type Hex } from 'viem'
+import type { ProposalBody } from '@ipe-gov/ipfs'
+import { useIdentity } from '#/hooks/useIdentity'
 import { useAccount, useReadContract } from 'wagmi'
 import {
   LiquidDelegationABI,
@@ -45,16 +47,20 @@ function ProposalPage() {
   const { proposalId } = Route.useParams()
   const id = BigInt(proposalId)
   const proposal = useProposal(id)
-  const { text: description, isLoading: descLoading } = useProposalDescription(
-    proposal.descriptionCid,
-  )
+  const {
+    text: description,
+    body,
+    isLoading: descLoading,
+  } = useProposalDescription(proposal.descriptionCid)
   const [status, setStatus] = useState<string>('')
 
-  const title = description
-    ? description
-    : descLoading
-      ? 'Loading description…'
-      : `Proposal #${proposalId}`
+  const title = body?.headline
+    ? body.headline
+    : description
+      ? description
+      : descLoading
+        ? 'Loading description…'
+        : `Proposal #${proposalId}`
 
   return (
     <main className="mx-auto max-w-3xl px-6 pb-24 pt-10">
@@ -88,6 +94,8 @@ function ProposalPage() {
           </div>
         </div>
       </header>
+
+      {body ? <ProposalBrief body={body} /> : null}
 
       <ProposalActions id={id} proposal={proposal} onStatusChange={setStatus} />
 
@@ -1018,4 +1026,177 @@ function describeDelegationReason(
     default:
       return null
   }
+}
+
+// ---------- Proposal brief ----------
+
+function ProposalBrief({ body }: { body: ProposalBody }) {
+  const totalLabel = formatAmount(body.totalCost)
+  return (
+    <article className="mb-12 space-y-12">
+      {body.problem ? (
+        <BriefSection n="01" title="Problem statement">
+          <BriefProse>{body.problem}</BriefProse>
+        </BriefSection>
+      ) : null}
+
+      {body.solution ? (
+        <BriefSection n="02" title="Proposed solution">
+          <BriefProse>{body.solution}</BriefProse>
+        </BriefSection>
+      ) : null}
+
+      {body.costs.length > 0 ? (
+        <BriefSection n="03" title="Detailed cost breakdown">
+          <div className="border-t border-border">
+            <div className="grid grid-cols-[1fr_9rem] border-b border-border py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              <span>Item</span>
+              <span className="text-right">Amount · USDC</span>
+            </div>
+            {body.costs.map((c, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[1fr_9rem] border-b border-border py-3"
+              >
+                <span className="pr-4 font-serif text-[15px] text-foreground">
+                  {c.item || '—'}
+                </span>
+                <span className="text-right font-mono text-[14px] tabular-nums text-foreground">
+                  {c.amount || '0'}
+                </span>
+              </div>
+            ))}
+            <div className="grid grid-cols-[1fr_9rem] py-3">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                Total
+              </span>
+              <span className="text-right font-mono text-lg tabular-nums text-foreground">
+                {totalLabel}
+              </span>
+            </div>
+          </div>
+        </BriefSection>
+      ) : null}
+
+      {body.outcomes ? (
+        <BriefSection n="04" title="Expected community outcomes">
+          <BriefProse>{body.outcomes}</BriefProse>
+        </BriefSection>
+      ) : null}
+
+      {body.milestones.length > 0 ? (
+        <BriefSection n="05" title="Funding timeline">
+          <ol className="border-t border-border">
+            {body.milestones.map((m, i) => (
+              <li
+                key={i}
+                className="grid grid-cols-[3rem_minmax(0,1fr)_9rem] items-start gap-4 border-b border-border py-4"
+              >
+                <span className="font-mono text-[12px] uppercase tracking-[0.18em] tabular-nums text-foreground">
+                  {m.label || `M${i + 1}`}
+                </span>
+                <div className="min-w-0">
+                  <div className="font-serif text-[15px] text-foreground">
+                    {m.detail || '—'}
+                  </div>
+                  {m.date ? (
+                    <div className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      {m.date}
+                    </div>
+                  ) : null}
+                </div>
+                <span className="text-right font-mono text-[14px] tabular-nums text-foreground">
+                  {m.amount ? `${m.amount}` : '—'}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </BriefSection>
+      ) : null}
+
+      <BriefSection n="06" title="Authors">
+        <ul className="border-t border-border">
+          <BriefAuthor address={body.authors.lead} role="lead" />
+          {body.authors.coAuthors.map((a) => (
+            <BriefAuthor key={a} address={a} role="co" />
+          ))}
+        </ul>
+        {body.credentials ? (
+          <div className="mt-6">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Credentials
+            </div>
+            <BriefProse>{body.credentials}</BriefProse>
+          </div>
+        ) : null}
+      </BriefSection>
+    </article>
+  )
+}
+
+function BriefSection({
+  n,
+  title,
+  children,
+}: {
+  n: string
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section>
+      <div className="mb-5 flex items-baseline gap-4 border-b border-border pb-3">
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] tabular-nums text-foreground">
+          §&nbsp;{n}
+        </span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
+          {title}
+        </span>
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function BriefProse({ children }: { children: string }) {
+  return (
+    <div className="whitespace-pre-wrap border-l-2 border-foreground/10 pl-5 font-serif text-[17px] leading-relaxed text-foreground/90">
+      {children}
+    </div>
+  )
+}
+
+function BriefAuthor({
+  address,
+  role,
+}: {
+  address: Address
+  role: 'lead' | 'co'
+}) {
+  const { data: name } = useIdentity(address)
+  return (
+    <li className="flex items-center justify-between gap-4 border-b border-border py-3">
+      <div className="flex items-baseline gap-3 min-w-0">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          {role === 'lead' ? 'Lead' : 'Co'}
+        </span>
+        <span className="truncate font-serif text-[16px] text-foreground">
+          {name ?? truncateAddress(address)}
+        </span>
+        {name ? (
+          <span className="truncate font-mono text-[11px] text-muted-foreground">
+            {truncateAddress(address)}
+          </span>
+        ) : null}
+      </div>
+    </li>
+  )
+}
+
+function formatAmount(n: number) {
+  if (!Number.isFinite(n)) return '0'
+  return n.toLocaleString(undefined, {
+    minimumFractionDigits: n % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })
 }

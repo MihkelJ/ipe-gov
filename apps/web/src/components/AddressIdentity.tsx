@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
-import { Avatar, AvatarFallback } from '#/components/ui/avatar'
-import { useIdentity } from '#/hooks/useIdentity'
+import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
+import { useEnsAvatar, useIdentity } from '#/hooks/useIdentity'
 import { truncateAddress } from '#/lib/address'
 
 type Size = 'sm' | 'default' | 'lg'
@@ -21,6 +21,7 @@ export function AddressIdentity({
   className,
 }: AddressIdentityProps) {
   const { data: name } = useIdentity(address)
+  const { data: avatarUrl } = useEnsAvatar(name)
   const label = name ?? truncateAddress(address)
   // Two chars: first two of the name, or the two-hex byte before the address suffix.
   const fallback = name
@@ -30,6 +31,7 @@ export function AddressIdentity({
   return (
     <div className={`flex items-center gap-3${className ? ` ${className}` : ''}`}>
       <Avatar size={size}>
+        {avatarUrl ? <AvatarImage src={avatarUrl} alt={label} /> : null}
         <AvatarFallback className="font-mono text-[10px] uppercase tracking-wider">
           {fallback}
         </AvatarFallback>

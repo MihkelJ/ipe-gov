@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createPublicClient, http, namehash, type Address } from 'viem'
+import { normalize } from 'viem/ens'
 import { mainnet } from 'viem/chains'
 
 const DAY = 1000 * 60 * 60 * 24
@@ -10,7 +11,14 @@ const ENS_SUBGRAPH_URL = 'https://api.thegraph.com/subgraphs/name/ensdomains/ens
 const SUBNAMES_KEY = ['ipecity-subnames'] as const
 
 // Standalone mainnet client: wagmi is Sepolia-only, ENS lives on L1.
-const ensClient = createPublicClient({ chain: mainnet, transport: http("https://eth.llamarpc.com") })
+// `batch.multicall` coalesces concurrent eth_calls (getEnsName, getEnsAvatar,
+// getEnsText) into a single Multicall3 request — members page fires N lookups
+// in parallel, so this drops N RPCs down to 1 per ~16ms tick.
+const ensClient = createPublicClient({
+  chain: mainnet,
+  transport: http('https://eth-mainnet.nodereal.io/v1/1659dfb40aa24bbb8153a677b98064d7'),
+  batch: { multicall: true },
+})
 
 /** Resolve display name for an address. Precedence:
  *  1. Wrapped `*.ipecity.eth` subname (from ENS subgraph)
@@ -44,6 +52,25 @@ export function useIpecitySubnames() {
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 60,
     queryFn: fetchIpecitySubnames,
+  })
+}
+
+/** Resolves the ENS `avatar` text record for a name to a usable image URL.
+ *  Handles IPFS, NFT (eip155) and HTTP avatars via viem's built-in parser.
+ *  One RPC per distinct name; cached for a day. */
+export function useEnsAvatar(name: string | null | undefined) {
+  return useQuery({
+    queryKey: ['ens-avatar', name],
+    enabled: !!name,
+    staleTime: DAY,
+    gcTime: DAY * 7,
+    queryFn: async (): Promise<string | null> => {
+      try {
+        return (await ensClient.getEnsAvatar({ name: normalize(name!) })) ?? null
+      } catch {
+        return null
+      }
+    },
   })
 }
 
