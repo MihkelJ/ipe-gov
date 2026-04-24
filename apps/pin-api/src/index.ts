@@ -1,8 +1,23 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { createPublicClient, http, verifyMessage, type Hex } from "viem";
+import {
+  createPublicClient,
+  http,
+  isAddress,
+  isHash,
+  isHex,
+  keccak256,
+  toBytes,
+  verifyMessage,
+  type Hex,
+} from "viem";
 import { sepolia } from "viem/chains";
-import { pinProposalDescription } from "@ipe-gov/ipfs";
+import { z } from "zod";
+import {
+  ProposalBodySchema,
+  canonicalJson,
+  pinProposalDescription,
+} from "@ipe-gov/ipfs";
 import { PublicLockABI, addresses } from "@ipe-gov/sdk";
 
 type Env = {
@@ -11,20 +26,44 @@ type Env = {
   ALLOWED_ORIGINS?: string;
 };
 
-type PinRequest = {
-  text: string;
-  address: Hex;
-  signature: Hex;
-  message: string;
-};
+const PinRequestSchema = z.object({
+  text: z.string().min(1).max(8_000),
+  address: z.custom<`0x${string}`>(
+    (v) => typeof v === "string" && isAddress(v, { strict: false }),
+    "invalid address",
+  ),
+  signature: z.custom<`0x${string}`>(
+    (v) => isHex(v),
+    "invalid signature",
+  ),
+  message: z.string().min(1).max(4_000),
+  body: ProposalBodySchema.optional(),
+});
+
+type PinRequest = z.infer<typeof PinRequestSchema>;
+
+const MAX_PIN_BYTES = 64 * 1024;
+
+function parseBodyHash(message: string): Hex | null {
+  const line = message.split("\n").find((l) => l.startsWith("body-hash: "));
+  if (!line) return null;
+  const v = line.slice("body-hash: ".length);
+  return isHash(v) ? v : null;
+}
 
 /** Builds the exact message the client must sign. The web client mirrors this. */
-function buildPinMessage(address: Hex, timestampMs: number): string {
-  return [
+function buildPinMessage(
+  address: Hex,
+  timestampMs: number,
+  bodyHash?: Hex,
+): string {
+  const lines = [
     "ipe-gov: pin proposal description",
     `address: ${address}`,
     `timestamp: ${new Date(timestampMs).toISOString()}`,
-  ].join("\n");
+  ];
+  if (bodyHash) lines.push(`body-hash: ${bodyHash}`);
+  return lines.join("\n");
 }
 
 function parseTimestamp(message: string): number {
@@ -34,10 +73,6 @@ function parseTimestamp(message: string): number {
   const ms = Date.parse(iso);
   if (Number.isNaN(ms)) throw new Error("invalid timestamp");
   return ms;
-}
-
-function isValidAddress(s: unknown): s is Hex {
-  return typeof s === "string" && /^0x[a-fA-F0-9]{40}$/.test(s);
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -54,17 +89,34 @@ app.use("*", async (c, next) => {
 app.get("/", (c) => c.text("ipe-gov pin-api"));
 
 app.post("/pin", async (c) => {
-  let body: PinRequest;
+  // Cap the request size before parsing — anything larger is almost certainly
+  // abuse (Pinata's own limit is far higher, but proposals shouldn't approach
+  // it). `c.req.text()` reads the raw body once; we parse after the size gate.
+  let raw: string;
   try {
-    body = await c.req.json<PinRequest>();
+    raw = await c.req.text();
+  } catch {
+    return c.json({ error: "could not read body" }, 400);
+  }
+  if (raw.length > MAX_PIN_BYTES) {
+    return c.json({ error: "payload too large" }, 413);
+  }
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(raw);
   } catch {
     return c.json({ error: "invalid JSON" }, 400);
   }
 
-  if (!body.text?.trim()) return c.json({ error: "text is required" }, 400);
-  if (!isValidAddress(body.address)) return c.json({ error: "invalid address" }, 400);
-  if (!body.signature?.startsWith("0x")) return c.json({ error: "invalid signature" }, 400);
-  if (!body.message) return c.json({ error: "message is required" }, 400);
+  const parsed = PinRequestSchema.safeParse(parsedJson);
+  if (!parsed.success) {
+    return c.json(
+      { error: "invalid request", issues: z.treeifyError(parsed.error) },
+      400,
+    );
+  }
+  const body: PinRequest = parsed.data;
 
   // 1. Signature must come from the claimed address over the exact message.
   const valid = await verifyMessage({
@@ -103,7 +155,28 @@ app.post("/pin", async (c) => {
     return c.json({ error: "address does not hold a valid membership key" }, 403);
   }
 
-  // 4. Pin to IPFS via Pinata.
+  // 4. A structured body is bound to the signature via a `body-hash` line in
+  //    the signed message. Reject in either direction: a body present without
+  //    a committed hash (so an attacker can't attach arbitrary content to a
+  //    legacy-shaped signature), or a committed hash without a body (so a
+  //    relay can't strip the body and pin a degraded v1 envelope).
+  const claimedHash = parseBodyHash(body.message);
+  if (body.body !== undefined) {
+    if (!claimedHash) {
+      return c.json({ error: "signed message is missing body-hash" }, 401);
+    }
+    const computed = keccak256(toBytes(canonicalJson(body.body)));
+    if (claimedHash.toLowerCase() !== computed.toLowerCase()) {
+      return c.json({ error: "body-hash does not match signed body" }, 401);
+    }
+  } else if (claimedHash) {
+    return c.json(
+      { error: "signed message commits to a body-hash but no body was sent" },
+      400,
+    );
+  }
+
+  // 5. Pin to IPFS via Pinata.
   if (!c.env.PINATA_JWT) {
     return c.json({ error: "server missing PINATA_JWT" }, 500);
   }
@@ -113,6 +186,7 @@ app.post("/pin", async (c) => {
       jwt: c.env.PINATA_JWT,
       text: body.text.trim(),
       proposer: body.address,
+      body: body.body,
     });
     return c.json({ cid });
   } catch (err) {

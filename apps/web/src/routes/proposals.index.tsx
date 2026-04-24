@@ -1,16 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
 import type { Hex } from 'viem'
-import { useAccount, useReadContract, useSignMessage } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
 import { UnlockConfidentialGovernorLiquidABI, addresses } from '@ipe-gov/sdk'
-import { useSponsoredWrite } from '../hooks/useSponsoredWrite'
 import { useProposal } from '../hooks/useProposal'
 import { useProposalDescription } from '../hooks/useProposalDescription'
 import { formatCountdown, useBlockCountdown } from '../hooks/useBlockCountdown'
-import { buildPinMessage, pinDescription } from '../lib/pinApi'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
-import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
 
 export const Route = createFileRoute('/proposals/')({
   head: () => ({ meta: [{ title: 'Proposals — ipe-gov' }] }),
@@ -27,7 +22,7 @@ function ProposalsGuarded() {
 
 function Proposals() {
   const { isConnected } = useAccount()
-  const { data: count, refetch: refetchCount } = useReadContract({
+  const { data: count } = useReadContract({
     address: addresses.sepolia.governorLiquid as Hex,
     abi: UnlockConfidentialGovernorLiquidABI,
     functionName: 'proposalCount',
@@ -37,7 +32,7 @@ function Proposals() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 pb-24 pt-12">
-      <header className="mb-12 flex items-end justify-between gap-6 border-b border-border pb-6">
+      <header className="mb-10 flex items-end justify-between gap-6 border-b border-border pb-6">
         <div>
           <div className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
             The Register · Sepolia
@@ -49,7 +44,19 @@ function Proposals() {
         </div>
       </header>
 
-      {isConnected ? <NewProposalForm onProposed={refetchCount} /> : null}
+      {isConnected ? (
+        <Link
+          to="/proposals/new"
+          className="group flex items-center justify-between gap-4 border border-dashed border-border px-5 py-4 transition-colors hover:border-foreground/60 hover:bg-accent/40"
+        >
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground transition-colors group-hover:text-foreground">
+            Draft a new motion
+          </span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/70 transition-colors group-hover:text-foreground">
+            Open drafting chamber →
+          </span>
+        </Link>
+      ) : null}
 
       <section className="mt-10">
         {ids.length === 0 ? (
@@ -144,74 +151,3 @@ function StatusChip({ tone }: { tone: StatusTone }) {
   )
 }
 
-function NewProposalForm({ onProposed }: { onProposed: () => Promise<unknown> }) {
-  const { address } = useAccount()
-  const [text, setText] = useState('')
-  const [status, setStatus] = useState('')
-  const [busy, setBusy] = useState(false)
-  const { signMessageAsync } = useSignMessage()
-  const { mutateAsync: sponsoredWrite } = useSponsoredWrite()
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!address || !text.trim()) return
-    setBusy(true)
-    try {
-      setStatus('Requesting signature…')
-      const message = buildPinMessage(address, Date.now())
-      const signature = await signMessageAsync({ message })
-
-      setStatus('Pinning to IPFS…')
-      const { cid } = await pinDescription({
-        data: { text: text.trim(), address, signature, message },
-      })
-
-      setStatus('Submitting on-chain proposal…')
-      await sponsoredWrite({
-        address: addresses.sepolia.governorLiquid as Hex,
-        abi: UnlockConfidentialGovernorLiquidABI,
-        functionName: 'propose',
-        args: [cid],
-      })
-      setStatus('Proposal submitted.')
-      setText('')
-      // Refetch proposalCount up the tree so the new motion appears in the
-      // register without a manual reload.
-      await onProposed()
-    } catch (err) {
-      setStatus(`Error: ${(err as Error).message}`)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <section className="mt-2 border border-border bg-secondary/30 px-6 py-5">
-      <div className="mb-4 flex items-baseline justify-between gap-4">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          New motion
-        </h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-          Pinned to IPFS · CID stored on-chain
-        </span>
-      </div>
-      <form onSubmit={submit} className="flex flex-col gap-3">
-        <Input
-          placeholder="What should the DAO decide?"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={busy}
-          className="h-11 text-base"
-        />
-        <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {status}
-          </span>
-          <Button type="submit" disabled={busy || !text.trim()}>
-            {busy ? 'Submitting…' : 'Propose'}
-          </Button>
-        </div>
-      </form>
-    </section>
-  )
-}

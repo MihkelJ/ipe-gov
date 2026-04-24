@@ -1,3 +1,5 @@
+import type { ProposalBody } from "./proposal-body";
+
 const PINATA_PIN_JSON_URL = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
 
 export type PinataError = { error: string; status: number };
@@ -6,21 +8,24 @@ export type PinataError = { error: string; status: number };
  * Pins a proposal description (JSON payload) to IPFS via Pinata and returns
  * the resulting CID.
  *
- * We wrap the text in a small JSON envelope so we can attach metadata (version,
- * createdAt) without another on-chain field.
+ * A structured `body` may be attached; when present the envelope is v2. The
+ * top-level `text` is retained as a short summary so list views and v1-only
+ * readers keep working.
  */
 export async function pinProposalDescription(params: {
   jwt: string;
   text: string;
   proposer: `0x${string}`;
+  body?: ProposalBody;
 }): Promise<{ cid: string }> {
   const body = {
     pinataContent: {
-      version: 1,
+      version: params.body ? 2 : 1,
       kind: "ipe-gov.proposal-description",
       text: params.text,
       proposer: params.proposer,
       createdAt: new Date().toISOString(),
+      ...(params.body ? { body: params.body } : {}),
     },
     pinataMetadata: {
       name: `proposal-description-${params.proposer}-${Date.now()}`,

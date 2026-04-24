@@ -1,4 +1,5 @@
-import type { Hex } from 'viem'
+import { keccak256, toBytes, type Hex } from 'viem'
+import { canonicalJson, type ProposalBody } from '@ipe-gov/ipfs'
 
 // Client for the @ipe-gov/pin-api Cloudflare Worker.
 
@@ -9,15 +10,30 @@ type PinInput = {
   address: Hex
   signature: Hex
   message: string
+  body?: ProposalBody
 }
 
-/** Builds the exact message the client should sign. Mirrors the Worker. */
-export function buildPinMessage(address: Hex, timestampMs: number): string {
-  return [
+/** Hash a structured proposal body deterministically so a signature can
+ *  bind to exactly what the pin-api forwards to Pinata. */
+export function hashBody(body: ProposalBody): Hex {
+  return keccak256(toBytes(canonicalJson(body)))
+}
+
+/** Builds the exact message the client should sign. Mirrors the Worker.
+ *  `bodyHash` MUST be included when a structured body is being pinned —
+ *  the Worker rejects v2 submissions without a matching `body-hash` line. */
+export function buildPinMessage(
+  address: Hex,
+  timestampMs: number,
+  bodyHash?: Hex,
+): string {
+  const lines = [
     'ipe-gov: pin proposal description',
     `address: ${address}`,
     `timestamp: ${new Date(timestampMs).toISOString()}`,
-  ].join('\n')
+  ]
+  if (bodyHash) lines.push(`body-hash: ${bodyHash}`)
+  return lines.join('\n')
 }
 
 export async function pinDescription({
