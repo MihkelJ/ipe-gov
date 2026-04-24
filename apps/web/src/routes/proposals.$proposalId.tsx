@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { isAddress, zeroAddress, type Address, type Hex } from 'viem'
 import type { ProposalBody } from '@ipe-gov/ipfs'
-import { useIdentity } from '#/hooks/useIdentity'
+import { useIdentity, useIpecitySubnames } from '#/hooks/useIdentity'
 import { useAccount, useReadContract } from 'wagmi'
 import {
   LiquidDelegationABI,
@@ -693,6 +693,7 @@ function DelegatePickerBlock({
   const [addr, setAddr] = useState('')
   const { mutateAsync: sponsoredWrite, isPending } = useSponsoredWrite()
   const { data: members = [], isLoading: membersLoading } = useAllMembers()
+  const { data: subnames } = useIpecitySubnames()
   const owners = useMemo(() => members.map((m) => m.owner), [members])
   // `all` is the caller's transitive reverse-delegation set — delegating to
   // any of them would cycle. Wagmi dedupes this read with the one in
@@ -711,14 +712,31 @@ function DelegatePickerBlock({
   const filteredMembers = useMemo(() => {
     const self = address?.toLowerCase()
     const query = addr.trim().toLowerCase()
-    return owners.filter((owner) => {
-      const lower = owner.toLowerCase()
-      if (self && lower === self) return false
-      if (cycleSet.has(lower)) return false
-      if (query.length === 0) return true
-      return lower.includes(query)
+    const rows = owners
+      .filter((owner) => {
+        const lower = owner.toLowerCase()
+        if (self && lower === self) return false
+        if (cycleSet.has(lower)) return false
+        return true
+      })
+      .map((owner) => ({ owner, name: subnames?.get(owner.toLowerCase()) }))
+    const matched =
+      query.length === 0
+        ? rows
+        : rows.filter(
+            (r) =>
+              r.owner.toLowerCase().includes(query) ||
+              (r.name ? r.name.toLowerCase().includes(query) : false),
+          )
+    // Named members first so community identities surface over raw hex.
+    matched.sort((a, b) => {
+      if (!!a.name === !!b.name) {
+        return (a.name ?? a.owner).localeCompare(b.name ?? b.owner)
+      }
+      return a.name ? -1 : 1
     })
-  }, [owners, address, addr, cycleSet])
+    return matched.map((r) => r.owner)
+  }, [owners, subnames, address, addr, cycleSet])
 
   async function doDelegate() {
     if (!normalized) {
@@ -763,7 +781,7 @@ function DelegatePickerBlock({
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
-          placeholder="Search address or paste 0x…"
+          placeholder="Search name or paste 0x…"
           value={addr}
           onChange={(e) => setAddr(e.target.value)}
           className="flex-1 border border-border bg-background px-3 py-2 font-mono text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground"
@@ -835,29 +853,54 @@ function MemberPickerList({
   }
   return (
     <div className="max-h-64 divide-y divide-border overflow-y-auto border border-border">
-      {filtered.map((owner) => {
-        const isSelected = selectedLower === owner.toLowerCase()
-        return (
-          <button
-            key={owner}
-            type="button"
-            onClick={() => onPick(owner)}
-            className={`flex w-full items-center justify-between px-3 py-2.5 text-left font-mono text-sm transition-colors ${
-              isSelected
-                ? 'bg-accent text-foreground'
-                : 'text-foreground/85 hover:bg-accent/60 hover:text-foreground'
-            }`}
-          >
-            <span>{truncateAddress(owner)}</span>
-            {isSelected ? (
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                selected
-              </span>
-            ) : null}
-          </button>
-        )
-      })}
+      {filtered.map((owner) => (
+        <DelegatePickerRow
+          key={owner}
+          owner={owner}
+          isSelected={selectedLower === owner.toLowerCase()}
+          onPick={onPick}
+        />
+      ))}
     </div>
+  )
+}
+
+function DelegatePickerRow({
+  owner,
+  isSelected,
+  onPick,
+}: {
+  owner: Hex
+  isSelected: boolean
+  onPick: (addr: Hex) => void
+}) {
+  const { data: name } = useIdentity(owner)
+  return (
+    <button
+      type="button"
+      onClick={() => onPick(owner)}
+      className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors ${
+        isSelected
+          ? 'bg-accent text-foreground'
+          : 'text-foreground/85 hover:bg-accent/60 hover:text-foreground'
+      }`}
+    >
+      <span className="min-w-0 flex items-baseline gap-3">
+        <span className="truncate font-serif text-[15px]">
+          {name ?? truncateAddress(owner)}
+        </span>
+        {name ? (
+          <span className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            {truncateAddress(owner)}
+          </span>
+        ) : null}
+      </span>
+      {isSelected ? (
+        <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          selected
+        </span>
+      ) : null}
+    </button>
   )
 }
 
