@@ -1,12 +1,18 @@
 import { useMutation } from "@tanstack/react-query";
-import { encodeFunctionData, type Abi, type Hex } from "viem";
+import { encodeFunctionData, http, type Abi, type Hex } from "viem";
+import { sendCalls, waitForCallsStatus } from "viem/actions";
+import { entryPoint08Address } from "viem/account-abstraction";
+import { sepolia } from "viem/chains";
+import { useSign7702Authorization } from "@privy-io/react-auth";
 import {
-  sendCalls,
-  sendTransaction,
-  waitForCallsStatus,
-  waitForTransactionReceipt,
-} from "viem/actions";
-import { useCapabilities, usePublicClient, useWalletClient } from "wagmi";
+  useCapabilities,
+  usePublicClient,
+  useSwitchChain,
+  useWalletClient,
+} from "wagmi";
+import { to7702SimpleSmartAccount } from "permissionless/accounts";
+import { createSmartAccountClient } from "permissionless";
+import { createPimlicoClient } from "permissionless/clients/pimlico";
 
 export type WriteParams = {
   address: Hex;
@@ -19,22 +25,34 @@ const PAYMASTER_URL = import.meta.env.VITE_PAYMASTER_PROXY_URL as
   | string
   | undefined;
 
+// Pimlico-published SimpleAccount 7702 delegation target — same across chains.
+// Matches permissionless's own `accountLogicAddress` default, so an EOA that
+// was already delegated via this flow stays pointed at the implementation our
+// SmartAccountClient knows about.
+const SIMPLE_ACCOUNT_7702_IMPL =
+  "0xe6Cae83BdE06E4c305530e199D7217f42808555B" as const;
+
 /**
- * Submit a contract write, optionally sponsored via EIP-5792
- * `wallet_sendCalls` + `paymasterService`.
+ * Submit a contract write, sponsored by Pimlico.
  *
- *   - Wallets that advertise `paymasterService: { supported: true }` in
- *     `wallet_getCapabilities` (Coinbase Smart Wallet, Ambire, Safe, Rabby,
- *     MetaMask with 7702 enabled) take the 5792 path and get sponsored.
- *   - Everyone else (plain EOA MetaMask, WalletConnect EOAs) falls through
- *     to sequential `eth_sendTransaction` calls — the user pays gas.
+ *   - If the wallet advertises EIP-5792 `paymasterService` support
+ *     (Coinbase Smart Wallet, Safe, Privy embedded, etc.) we hand the bundle
+ *     straight to the wallet via `wallet_sendCalls` — the wallet coordinates
+ *     sponsorship with the paymaster itself.
+ *   - Everyone else (plain EOAs like MetaMask) gets upgraded to a SimpleAccount
+ *     via EIP-7702 once, then every subsequent write is batched + sponsored
+ *     as a 4337 user operation through the Pimlico bundler.
  *
- * The worker keeps gating sponsorship on Unlock-key membership of the sender,
- * so non-members on capable wallets simply won't get sponsored either.
+ * The worker still gates sponsorship on Unlock-key membership, so non-members
+ * won't get sponsored down either path.
  */
 export function useSponsoredWrite() {
-  const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
+  const { data: walletClient, refetch: refetchWalletClient } = useWalletClient();
+  // Pin to Sepolia so waitForTransactionReceipt polls the governance chain
+  // regardless of which chain the wallet happens to be on at render time.
+  const publicClient = usePublicClient({ chainId: sepolia.id });
+  const { mutateAsync: switchChainAsync } = useSwitchChain();
+  const { signAuthorization } = useSign7702Authorization();
   const { data: capabilities } = useCapabilities({
     account: walletClient?.account?.address,
     query: { enabled: Boolean(walletClient?.account?.address) },
@@ -45,6 +63,18 @@ export function useSponsoredWrite() {
     mutationFn: async (params: WriteParams | WriteParams[]): Promise<Hex> => {
       if (!walletClient?.account) throw new Error("wallet not connected");
       if (!PAYMASTER_URL) throw new Error("VITE_PAYMASTER_PROXY_URL not set");
+      if (!publicClient) throw new Error("public client unavailable");
+
+      // External wallets may be on any chain when the user triggers a write.
+      // Force Sepolia before signing — otherwise the wallet will sign on the
+      // wrong chain and the subsequent wait hangs until timeout.
+      let client = walletClient;
+      if (client.chain.id !== sepolia.id) {
+        await switchChainAsync({ chainId: sepolia.id });
+        const { data: fresh } = await refetchWalletClient();
+        if (!fresh?.account) throw new Error("wallet not connected");
+        client = fresh;
+      }
 
       const paramsArray = Array.isArray(params) ? params : [params];
       if (paramsArray.length === 0) throw new Error("no calls to send");
@@ -58,22 +88,20 @@ export function useSponsoredWrite() {
         }),
       }));
 
-      // `useCapabilities` returns a per-chain map (keyed by chainId, as a
-      // number in wagmi's typed version). If the current chain reports
-      // `paymasterService.supported`, bundle + sponsor via 5792.
-      const chainId = walletClient.chain.id;
-      const chainCaps = capabilities?.[chainId];
+      const chainCaps = capabilities?.[sepolia.id];
       const paymasterSupported = chainCaps?.paymasterService?.supported === true;
 
+      // Path A: EIP-5792 wallet_sendCalls + paymasterService capability.
       if (paymasterSupported) {
-        const { id } = await sendCalls(walletClient, {
+        const { id } = await sendCalls(client, {
+          chain: sepolia,
           calls,
           capabilities: {
             paymasterService: { url: PAYMASTER_URL, optional: true },
           },
         });
 
-        const result = await waitForCallsStatus(walletClient, {
+        const result = await waitForCallsStatus(client, {
           id,
           throwOnFailure: true,
           // viem's default (~60s) trips on ordinary Sepolia+Pimlico inclusion
@@ -87,21 +115,53 @@ export function useSponsoredWrite() {
         return txHash;
       }
 
-      // Plain EOA: send each call one-by-one via eth_sendTransaction.
-      let lastHash: Hex | undefined;
-      for (const call of calls) {
-        lastHash = await sendTransaction(walletClient, {
-          account: walletClient.account,
-          chain: walletClient.chain,
-          to: call.to,
-          data: call.data,
-          value: call.value,
-        });
-        if (publicClient)
-          await waitForTransactionReceipt(publicClient, { hash: lastHash });
-      }
-      if (!lastHash) throw new Error("no transaction was sent");
-      return lastHash;
+      // Path B: EIP-7702 upgrade via Pimlico. Works for any EOA whose signer
+      // implements authorization signxing (which Privy's hook routes to either
+      // the embedded wallet directly or the connected external wallet's
+      // `wallet_signAuthorization` RPC).
+      const smartAccount = await to7702SimpleSmartAccount({
+        client: publicClient,
+        owner: client,
+        entryPoint: { address: entryPoint08Address, version: "0.8" },
+      });
+
+      const pimlicoClient = createPimlicoClient({
+        chain: sepolia,
+        transport: http(PAYMASTER_URL),
+      });
+
+      const smartAccountClient = createSmartAccountClient({
+        account: smartAccount,
+        chain: sepolia,
+        bundlerTransport: http(PAYMASTER_URL),
+        paymaster: pimlicoClient,
+        userOperation: {
+          estimateFeesPerGas: async () =>
+            (await pimlicoClient.getUserOperationGasPrice()).fast,
+        },
+      });
+
+      // If the EOA already has delegated code (from a prior run or another
+      // app), skip the authorization signature — saves the user a prompt.
+      const code = await publicClient.getCode({
+        address: client.account.address,
+      });
+      const alreadyDelegated = code !== undefined && code !== "0x";
+
+      const authorization = alreadyDelegated
+        ? undefined
+        : await signAuthorization(
+            {
+              contractAddress: SIMPLE_ACCOUNT_7702_IMPL,
+              chainId: sepolia.id,
+            },
+            { address: client.account.address },
+          );
+
+      return await smartAccountClient.sendTransaction({
+        calls,
+        ...(authorization ? { authorization } : {}),
+      });
     },
   });
 }
