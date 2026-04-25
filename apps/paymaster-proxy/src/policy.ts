@@ -1,13 +1,15 @@
-import { createPublicClient, http, toFunctionSelector, type Hex } from "viem";
-import { sepolia } from "viem/chains";
-import { PublicLockABI, addresses } from "@ipe-gov/sdk";
-
-const lock = addresses.sepolia.lock as Hex;
-const lockNeedle = lock.toLowerCase().slice(2);
+import {
+  createPublicClient,
+  http,
+  toFunctionSelector,
+  type Chain,
+  type Hex,
+} from "viem";
+import { PublicLockABI } from "@ipe-gov/sdk";
 
 /** Both `purchase` overloads on PublicLockV15 — the array form used by our UI
- *  and the tuple form some wallets prefer. Either one targeting our lock
- *  counts as a passport claim and is sponsorable even for non-members. */
+ *  and the tuple form some wallets prefer. Either one targeting the chain's
+ *  lock counts as a passport claim and is sponsorable even for non-members. */
 const PURCHASE_SELECTORS: readonly string[] = [
   toFunctionSelector(
     "purchase(uint256[],address[],address[],address[],bytes[])",
@@ -36,40 +38,65 @@ export type UserOp = {
  *  inner call: the lock's 20-byte address and the 4-byte `purchase` selector.
  *  Both appearing together is enough to identify a passport claim without
  *  opening sponsorship to arbitrary calls. */
-function isPassportClaim(userOp: UserOp): boolean {
+function isPassportClaim(userOp: UserOp, lockAddress: Hex): boolean {
   const cd = userOp.callData?.toLowerCase();
   if (!cd) return false;
+  const lockNeedle = lockAddress.toLowerCase().slice(2);
   if (!cd.includes(lockNeedle)) return false;
   return PURCHASE_SELECTORS.some((sel) => cd.includes(sel));
 }
 
+export type PolicyContext = {
+  chain: Chain;
+  /** Lock address used for the membership-key check. Optional because some
+   *  chains gate sponsorship purely via the operator allowlist (no lock). */
+  lockAddress?: Hex;
+  /** System-actor addresses (lowercased) allowed to spend Pimlico credits
+   *  unconditionally — e.g. ens-api's mint wallet. Always checked first. */
+  operatorAllowlist?: readonly Hex[];
+};
+
 /**
  * Sponsor any UserOp whose sender (the user's EOA under 7702 delegation) holds
- * a valid Unlock membership key. Same gate as pin-api.
+ * a valid Unlock membership key on the given chain. Same gate as pin-api.
  *
  * Calls without a sender (free upstream reads like eth_getUserOperationReceipt
  * or eth_chainId) pass through unchecked — they don't spend Pimlico credits.
+ *
+ * The operator allowlist is checked first: senders in it bypass the lock
+ * entirely. This is how we sponsor ens-api's mint wallet on mainnet without
+ * deploying an Unlock lock there just for one system actor.
  */
 export async function enforcePolicy(
-  _userOp: UserOp,
+  userOp: UserOp,
   _rpcUrl: string,
+  ctx: PolicyContext,
 ): Promise<void> {
+  if (!userOp.sender) return;
+
+  // Operator allowlist short-circuits both the membership gate and the
+  // passport-claim heuristic. Always-allow for known system addresses.
+  const senderLower = userOp.sender.toLowerCase() as Hex;
+  if (ctx.operatorAllowlist?.some((addr) => addr === senderLower)) return;
+
   // TEMP: membership gate disabled while we validate the 7702 flow end-to-end.
-  // Restore the body below (and drop the leading underscores on the params)
-  // before shipping — otherwise anyone can burn our Pimlico credits.
+  // Restore the body below before shipping — otherwise anyone can burn our
+  // Pimlico credits.
   return;
 
   /*
-  if (!userOp.sender) return;
+  if (!ctx.lockAddress) {
+    throw new PolicyError("sponsorship lock not configured on this chain");
+  }
 
-  if (isPassportClaim(userOp)) return;
+  if (isPassportClaim(userOp, ctx.lockAddress)) return;
 
   const client = createPublicClient({
-    chain: sepolia,
-    transport: http(rpcUrl),
+    chain: ctx.chain,
+    transport: http(_rpcUrl),
   });
   const hasKey = await client.readContract({
-    address: lock,
+    address: ctx.lockAddress,
     abi: PublicLockABI,
     functionName: "getHasValidKey",
     args: [userOp.sender],

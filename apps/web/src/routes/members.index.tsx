@@ -7,7 +7,7 @@ import { useAllMembers, type MemberKey } from '#/hooks/useMembers'
 import { useMemberBalances } from '#/hooks/useMemberBalances'
 import { tokens } from '@ipe-gov/sdk'
 import { AddressIdentity } from '#/components/AddressIdentity'
-import { useIpecitySubnames } from '#/hooks/useIdentity'
+import { useClaimedSubnames } from '#/hooks/useIdentity'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
 import { Badge } from '#/components/ui/badge'
@@ -67,7 +67,7 @@ const THIRTY_DAYS = 60n * 60n * 24n * 30n
 function Members() {
   const { data: members = [], isLoading, error, refetch } = useAllMembers()
   const total = members.length
-  const { data: subnames } = useIpecitySubnames()
+  const { data: subnames } = useClaimedSubnames()
   const {
     balances,
     isLoading: balancesLoading,

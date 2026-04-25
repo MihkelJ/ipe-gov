@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ipe-gov-ens-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Secrets (set via `wrangler secret put <NAME>`):
+  //   SEPOLIA_RPC_URL       Used to verify Unlock membership before claim.
+  //   MAINNET_RPC_URL       Used to read NameWrapper + write subname mints.
+  //   MAINNET_OPERATOR_KEY  0x-prefixed private key for the hot wallet that
+  //                         has setApprovalForAll on govdemo.eth.
+  //   ENS_PARENT_NAME       Parent name, e.g. "govdemo.eth".
+  //   ALLOWED_ORIGINS       Comma-separated CORS allowlist (optional).
+  //
+  // KV namespace stores `{ address, label, node, fullName, txHash, mintedAt }`
+  // records under the key `claims:all` (single JSON list, mutated serially by
+  // the worker). Create with:
+  //   pnpm dlx wrangler kv namespace create IDENTITIES
+  // and paste the returned id below.
+  "kv_namespaces": [
+    {
+      "binding": "IDENTITIES",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ]
+}

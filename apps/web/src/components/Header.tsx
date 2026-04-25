@@ -34,6 +34,15 @@ export default function Header() {
           >
             Members
           </Link>
+          {authenticated ? (
+            <Link
+              to="/profile"
+              className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
+              activeProps={{ className: 'text-foreground' }}
+            >
+              Your name
+            </Link>
+          ) : null}
           {!ready ? null : !authenticated ? (
             <Button size="sm" onClick={login}>
               Sign in

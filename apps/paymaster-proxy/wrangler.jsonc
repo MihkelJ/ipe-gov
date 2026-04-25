@@ -7,7 +7,9 @@
   "observability": { "enabled": true }
   // Secrets (set via `wrangler secret put <NAME>`):
   //   PIMLICO_API_KEY     Pimlico API key (paymaster + bundler)
-  //   SEPOLIA_RPC_URL     RPC endpoint used for the Unlock key check
+  //   RPC_URL_11155111    Sepolia node RPC (sponsored writes + reads)
+  //   RPC_URL_8453        Base node RPC (read-only until lock deployed)
+  //   RPC_URL_1           Mainnet node RPC (read-only; ENS lookups)
   // Public origin allowlist (comma separated). Set as a regular var below,
   // or via `wrangler deploy --var ALLOWED_ORIGINS:...`.
   // "vars": {

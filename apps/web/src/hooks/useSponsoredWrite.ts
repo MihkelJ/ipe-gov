@@ -21,9 +21,14 @@ export type WriteParams = {
   args: readonly unknown[];
 };
 
-const PAYMASTER_URL = import.meta.env.VITE_PAYMASTER_PROXY_URL as
+const PAYMASTER_BASE = import.meta.env.VITE_PAYMASTER_PROXY_URL as
   | string
   | undefined;
+// The proxy routes by chainId in the path. Sponsored writes target the
+// governance chain (Sepolia); Base/Mainnet writes are not gas-sponsored.
+const PAYMASTER_URL = PAYMASTER_BASE
+  ? `${PAYMASTER_BASE}/${sepolia.id}`
+  : undefined;
 
 // Pimlico-published SimpleAccount 7702 delegation target — same across chains.
 // Matches permissionless's own `accountLogicAddress` default, so an EOA that

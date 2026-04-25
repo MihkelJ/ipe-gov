@@ -13,6 +13,7 @@
   "dependencies": {
     "@ipe-gov/ipfs": "workspace:*",
     "@ipe-gov/sdk": "workspace:*",
+    "@ipe-gov/workers-shared": "workspace:*",
     "hono": "^4.12.14",
     "viem": "^2.48.4",
     "zod": "^4.3.6"

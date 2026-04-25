@@ -25,6 +25,7 @@
     "hardhat"
   ],
   "dependencies": {
+    "@ensdomains/ens-contracts": "^1.7.0",
     "@fhevm/mock-utils": "^0.4.2",
     "@fhevm/solidity": "^0.11.1",
     "@unlock-protocol/contracts": "^0.0.35",

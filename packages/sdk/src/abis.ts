@@ -3,3 +3,5 @@ export { UnlockConfidentialGovernorABI } from "./abis/UnlockConfidentialGovernor
 export { UnlockConfidentialGovernorLiquidABI } from "./abis/UnlockConfidentialGovernorLiquid";
 export { LiquidDelegationABI } from "./abis/LiquidDelegation";
 export { PublicLockABI } from "./abis/PublicLock";
+export { NameWrapperABI } from "./abis/NameWrapper";
+export { PublicResolverABI } from "./abis/PublicResolver";
