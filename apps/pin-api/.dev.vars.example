@@ -4,8 +4,8 @@
 # Pinata JWT for pinning to IPFS — https://app.pinata.cloud/developers/api-keys
 PINATA_JWT=
 
-# Sepolia RPC URL (used to validate membership keys before pinning)
-SEPOLIA_RPC_URL=
-
 # Comma-separated CORS allowlist (optional; defaults handled in code)
 ALLOWED_ORIGINS=http://localhost:5173
+
+# Sepolia reads route through the deployed paymaster-proxy via
+# @ipe-gov/sdk's `paymasterProxyRpcUrl` — no RPC URL needed locally.

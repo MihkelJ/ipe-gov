@@ -7,7 +7,7 @@ import type { ProposalBody } from '@ipe-gov/ipfs'
 import { useSponsoredWrite } from '../hooks/useSponsoredWrite'
 import { buildPinMessage, hashBody, pinDescription } from '../lib/pinApi'
 import { useAllMembers } from '../hooks/useMembers'
-import { useIdentity, useIpecitySubnames } from '#/hooks/useIdentity'
+import { useClaimedSubnames, useIdentity } from '#/hooks/useIdentity'
 import { truncateAddress } from '#/lib/address'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { Button } from '#/components/ui/button'
@@ -852,7 +852,7 @@ function CommunityPicker({
   onAdd: (a: Address) => void
 }) {
   const { data: members, isLoading } = useAllMembers()
-  const { data: subnames } = useIpecitySubnames()
+  const { data: subnames } = useClaimedSubnames()
   const [query, setQuery] = useState('')
 
   const selfLower = selfAddress?.toLowerCase()

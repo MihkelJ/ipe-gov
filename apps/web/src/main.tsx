@@ -4,7 +4,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { WagmiProvider } from '@privy-io/wagmi'
-import { base, sepolia } from 'viem/chains'
+import { base, mainnet, sepolia } from 'viem/chains'
 import { getRouter } from './router'
 import { getContext } from './integrations/tanstack-query/root-provider'
 import { wagmiConfig } from './lib/wagmi'
@@ -47,9 +47,11 @@ createRoot(rootEl).render(
         // method must also be enabled in the Privy dashboard.
         loginMethods: ['email', 'google', 'wallet'],
         // Pin external wallets to Sepolia on connect; governance contracts
-        // live there. Base is still allowed for the read-only IPE balance.
+        // live there. Base is allowed for the read-only IPE balance; mainnet
+        // is allowed so members can edit their ENS profile records on the
+        // wrapped subname directly via PublicResolver.
         defaultChain: sepolia,
-        supportedChains: [sepolia, base],
+        supportedChains: [sepolia, base, mainnet],
         embeddedWallets: {
           ethereum: { createOnLogin: 'users-without-wallets' },
         },

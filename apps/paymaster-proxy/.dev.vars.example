@@ -4,8 +4,18 @@
 # Pimlico API key — https://dashboard.pimlico.io/
 PIMLICO_API_KEY=
 
-# Sepolia RPC URL (used to verify Unlock membership keys)
-SEPOLIA_RPC_URL=
+# Per-chain RPC URLs. The proxy reads RPC_URL_<chainId> based on the path
+# segment in /rpc/:chainId. Provision the chains you support; requests for
+# chains without a configured secret return a 500.
+RPC_URL_11155111=
+RPC_URL_8453=
+RPC_URL_1=
+
+# Per-chain operator allowlist. Comma-separated lowercase addresses that bypass
+# the membership check on bundler methods — used for system actors like
+# ens-api's mint wallet on mainnet. Format: OPERATOR_ALLOWLIST_<chainId>=0xabc,0xdef
+# Mainnet must include the ens-api operator EOA (derive from MAINNET_OPERATOR_KEY).
+OPERATOR_ALLOWLIST_1=
 
 # Comma-separated CORS allowlist (optional; defaults handled in code)
 ALLOWED_ORIGINS=http://localhost:5173

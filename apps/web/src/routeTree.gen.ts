@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProposalsIndexRouteImport } from './routes/proposals.index'
 import { Route as MembersIndexRouteImport } from './routes/members.index'
 import { Route as ProposalsNewRouteImport } from './routes/proposals.new'
 import { Route as ProposalsProposalIdRouteImport } from './routes/proposals.$proposalId'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const ProposalsProposalIdRoute = ProposalsProposalIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/profile': typeof ProfileRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
   '/proposals/new': typeof ProposalsNewRoute
   '/members/': typeof MembersIndexRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/profile': typeof ProfileRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
   '/proposals/new': typeof ProposalsNewRoute
   '/members': typeof MembersIndexRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/profile': typeof ProfileRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
   '/proposals/new': typeof ProposalsNewRoute
   '/members/': typeof MembersIndexRoute
@@ -67,6 +76,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/profile'
     | '/proposals/$proposalId'
     | '/proposals/new'
     | '/members/'
@@ -74,6 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/profile'
     | '/proposals/$proposalId'
     | '/proposals/new'
     | '/members'
@@ -81,6 +92,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/profile'
     | '/proposals/$proposalId'
     | '/proposals/new'
     | '/members/'
@@ -89,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProfileRoute: typeof ProfileRoute
   ProposalsProposalIdRoute: typeof ProposalsProposalIdRoute
   ProposalsNewRoute: typeof ProposalsNewRoute
   MembersIndexRoute: typeof MembersIndexRoute
@@ -97,6 +110,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -137,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProfileRoute: ProfileRoute,
   ProposalsProposalIdRoute: ProposalsProposalIdRoute,
   ProposalsNewRoute: ProposalsNewRoute,
   MembersIndexRoute: MembersIndexRoute,

@@ -1,0 +1,17 @@
+# Local dev secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored).
+# For production, set these with `wrangler secret put <NAME>`.
+
+# 0x-prefixed private key of the hot wallet whose address has
+# setApprovalForAll(true) on the parent name's NameWrapper position. Gas is
+# paid by Pimlico via the paymaster-proxy, so this wallet does NOT need an
+# ETH balance — but its derived address MUST appear in the proxy's
+# OPERATOR_ALLOWLIST_1 secret or the policy will reject the UserOp. Treat
+# as a hot key — revoke NameWrapper approval from the owner wallet if it leaks.
+MAINNET_OPERATOR_KEY=
+
+# Comma-separated CORS allowlist (optional; defaults to *).
+ALLOWED_ORIGINS=http://localhost:3000
+
+# All RPC traffic (Sepolia membership check + mainnet NameWrapper reads +
+# sponsored mint UserOps) routes through the deployed paymaster-proxy via
+# @ipe-gov/sdk's `paymasterProxyRpcUrl` helper — no RPC URLs needed here.

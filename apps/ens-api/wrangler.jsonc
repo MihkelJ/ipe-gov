@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ipe-gov-ens-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Secrets (set via `wrangler secret put <NAME>`):
+  //   MAINNET_OPERATOR_KEY  0x-prefixed private key for the hot wallet that
+  //                         has setApprovalForAll on govdemo.eth.
+  //   ALLOWED_ORIGINS       Comma-separated CORS allowlist (optional).
+  //
+  // RPC traffic (Sepolia + mainnet) routes through paymaster-proxy via the
+  // `paymasterProxyRpcUrl` helper in @ipe-gov/sdk — no per-chain RPC secrets
+  // are needed on this worker.
+  //
+  // KV namespace stores `{ address, label, node, fullName, txHash, mintedAt }`
+  // records under the key `claims:all` (single JSON list, mutated serially by
+  // the worker). Create with:
+  //   pnpm dlx wrangler kv namespace create IDENTITIES
+  // and paste the returned id below.
+  "kv_namespaces": [
+    {
+      "binding": "IDENTITIES",
+      "id": "efaa1972b7a04bcebee6930c66f6e84e"
+    }
+  ]
+}

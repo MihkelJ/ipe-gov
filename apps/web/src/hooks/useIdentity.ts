@@ -1,14 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createPublicClient, http, namehash, type Address } from 'viem'
+import { createPublicClient, http, type Address } from 'viem'
 import { normalize } from 'viem/ens'
 import { mainnet } from 'viem/chains'
+import { fetchAllSubnameIdentities } from '#/lib/ensApi'
 
 const DAY = 1000 * 60 * 60 * 24
-const IPECITY_PARENT = 'ipecity.eth'
-// ENS legacy hosted subgraph — deprecated June 2024 but ENS's deployment is
-// still indexing mainnet blocks and serves queries without an API key.
-const ENS_SUBGRAPH_URL = 'https://api.thegraph.com/subgraphs/name/ensdomains/ens'
-const SUBNAMES_KEY = ['ipecity-subnames'] as const
+const CLAIMED_KEY = ['l2-subname-identities'] as const
+// Registrar events don't change on the minute-scale; a 10-minute cache is
+// enough to deduplicate bursts from the members page without delaying fresh
+// claims by more than a single stale window.
+const CLAIMED_STALE_MS = 1000 * 60 * 10
 
 // Standalone mainnet client: wagmi is Sepolia-only, ENS lives on L1.
 // `batch.multicall` coalesces concurrent eth_calls (getEnsName, getEnsAvatar,
@@ -20,10 +21,13 @@ const ensClient = createPublicClient({
   batch: { multicall: true },
 })
 
-/** Resolve display name for an address. Precedence:
- *  1. Wrapped `*.ipecity.eth` subname (from ENS subgraph)
- *  2. ENS primary name (reverse resolution on mainnet)
- *  3. `null` — caller falls back to truncated address. */
+/** Resolve a display name for an address. Precedence:
+ *  1. Active L2 subname under the configured parent (via ens-api).
+ *  2. Mainnet ENS primary name (reverse resolution).
+ *  3. `null` — caller falls back to a truncated hex address.
+ *
+ *  The L2 lookup goes through the shared `l2-subname-identities` query so a
+ *  members-page render that probes N addresses still issues a single fetch. */
 export function useIdentity(address: Address | undefined) {
   const queryClient = useQueryClient()
   return useQuery({
@@ -32,32 +36,44 @@ export function useIdentity(address: Address | undefined) {
     staleTime: DAY,
     gcTime: DAY * 7,
     queryFn: async (): Promise<string | null> => {
-      const subnames = await queryClient.fetchQuery({
-        queryKey: SUBNAMES_KEY,
-        staleTime: 1000 * 60 * 10,
-        queryFn: fetchIpecitySubnames,
+      const claimed = await queryClient.fetchQuery({
+        queryKey: CLAIMED_KEY,
+        staleTime: CLAIMED_STALE_MS,
+        queryFn: () => fetchClaimedMap(),
       })
-      const ipe = subnames.get(address!.toLowerCase())
-      if (ipe) return ipe
-      return (await ensClient.getEnsName({ address: address! })) ?? null
+      const fullName = claimed.get(address!.toLowerCase())
+      if (fullName) return fullName
+      try {
+        return (await ensClient.getEnsName({ address: address! })) ?? null
+      } catch {
+        // The public mainnet RPC sometimes rate-limits; returning null lets
+        // callers fall back to a truncated address instead of spinning.
+        return null
+      }
     },
   })
 }
 
-/** Map of wrapped-subname owners for `ipecity.eth`. Shared with `useIdentity`
- *  via the `ipecity-subnames` query key, so there's only ever one fetch. */
-export function useIpecitySubnames() {
+/** Map of live L2 subname claims under the configured parent: `address` →
+ *  `fullName` (e.g. "alice.govdemo.eth"). Shared with `useIdentity` via the
+ *  `l2-subname-identities` query key so there's only ever one network fetch
+ *  backing both per cache window. */
+export function useClaimedSubnames() {
   return useQuery({
-    queryKey: SUBNAMES_KEY,
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 60,
-    queryFn: fetchIpecitySubnames,
+    queryKey: CLAIMED_KEY,
+    staleTime: CLAIMED_STALE_MS,
+    gcTime: DAY,
+    queryFn: () => fetchClaimedMap(),
   })
 }
 
 /** Resolves the ENS `avatar` text record for a name to a usable image URL.
  *  Handles IPFS, NFT (eip155) and HTTP avatars via viem's built-in parser.
- *  One RPC per distinct name; cached for a day. */
+ *  One RPC per distinct name; cached for a day.
+ *
+ *  Note: this only resolves mainnet avatars. L2 subname avatars live on the
+ *  Base registry; callers that need them should read the `avatar` text
+ *  record directly off the registry for now. */
 export function useEnsAvatar(name: string | null | undefined) {
   return useQuery({
     queryKey: ['ens-avatar', name],
@@ -74,32 +90,11 @@ export function useEnsAvatar(name: string | null | undefined) {
   })
 }
 
-type DomainRow = { name: string | null; wrappedOwner: { id: string } | null }
-
-async function fetchIpecitySubnames(): Promise<Map<string, string>> {
-  const query = /* GraphQL */ `
-    query Subnames($parent: String!) {
-      domains(first: 1000, where: { parent: $parent, wrappedOwner_not: null }) {
-        name
-        wrappedOwner { id }
-      }
-    }
-  `
-  const res = await fetch(ENS_SUBGRAPH_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables: { parent: namehash(IPECITY_PARENT) } }),
-  })
-  if (!res.ok) throw new Error(`ens subgraph ${res.status}: ${await res.text()}`)
-  const json = (await res.json()) as {
-    data?: { domains: DomainRow[] }
-    errors?: { message: string }[]
-  }
-  if (json.errors?.length) throw new Error(json.errors.map((e) => e.message).join('; '))
+async function fetchClaimedMap(): Promise<Map<string, string>> {
+  const identities = await fetchAllSubnameIdentities()
   const map = new Map<string, string>()
-  for (const d of json.data?.domains ?? []) {
-    const owner = d.wrappedOwner?.id?.toLowerCase()
-    if (owner && d.name) map.set(owner, d.name)
+  for (const i of identities) {
+    map.set(i.address.toLowerCase(), i.fullName)
   }
   return map
 }

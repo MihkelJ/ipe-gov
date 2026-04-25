@@ -20,6 +20,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "clones-with-immutable-args",
       "esbuild",
       "keccak",
       "lightningcss",

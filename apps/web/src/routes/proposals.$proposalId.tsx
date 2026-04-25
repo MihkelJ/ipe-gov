@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { isAddress, zeroAddress, type Address, type Hex } from 'viem'
 import type { ProposalBody } from '@ipe-gov/ipfs'
-import { useIdentity, useIpecitySubnames } from '#/hooks/useIdentity'
+import { useClaimedSubnames, useIdentity } from '#/hooks/useIdentity'
 import { useAccount, useReadContract } from 'wagmi'
 import {
   LiquidDelegationABI,
@@ -777,7 +777,7 @@ function DelegatePickerBlock({
   const [addr, setAddr] = useState('')
   const { mutateAsync: sponsoredWrite, isPending } = useSponsoredWrite()
   const { data: members = [], isLoading: membersLoading } = useAllMembers()
-  const { data: subnames } = useIpecitySubnames()
+  const { data: subnames } = useClaimedSubnames()
   const owners = useMemo(() => members.map((m) => m.owner), [members])
   // `all` is the caller's transitive reverse-delegation set — delegating to
   // any of them would cycle. Wagmi dedupes this read with the one in
