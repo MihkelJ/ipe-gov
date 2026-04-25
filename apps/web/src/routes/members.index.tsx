@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Copy, ExternalLink, Search } from 'lucide-react'
 import { formatUnits, type Hex } from 'viem'
@@ -327,9 +327,13 @@ function MemberRow({
         <div className="flex items-center gap-3">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="cursor-default">
+              <Link
+                to="/members/$address"
+                params={{ address: member.owner }}
+                className="rounded-sm transition-colors hover:bg-accent/40"
+              >
                 <AddressIdentity address={member.owner} size="sm" />
-              </span>
+              </Link>
             </TooltipTrigger>
             <TooltipContent className="font-mono">{member.owner}</TooltipContent>
           </Tooltip>
