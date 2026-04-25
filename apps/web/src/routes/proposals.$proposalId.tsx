@@ -1302,20 +1302,26 @@ function BriefAuthor({
 }) {
   const { data: name } = useIdentity(address)
   return (
-    <li className="flex items-center justify-between gap-4 border-b border-border py-3">
-      <div className="flex items-baseline gap-3 min-w-0">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          {role === 'lead' ? 'Lead' : 'Co'}
-        </span>
-        <span className="truncate font-serif text-[16px] text-foreground">
-          {name ?? truncateAddress(address)}
-        </span>
-        {name ? (
-          <span className="truncate font-mono text-[11px] text-muted-foreground">
-            {truncateAddress(address)}
+    <li className="border-b border-border">
+      <Link
+        to="/members/$address"
+        params={{ address }}
+        className="flex items-center justify-between gap-4 py-3 transition-colors hover:bg-accent/40"
+      >
+        <div className="flex items-baseline gap-3 min-w-0">
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            {role === 'lead' ? 'Lead' : 'Co'}
           </span>
-        ) : null}
-      </div>
+          <span className="truncate font-serif text-[16px] text-foreground">
+            {name ?? truncateAddress(address)}
+          </span>
+          {name ? (
+            <span className="truncate font-mono text-[11px] text-muted-foreground">
+              {truncateAddress(address)}
+            </span>
+          ) : null}
+        </div>
+      </Link>
     </li>
   )
 }
