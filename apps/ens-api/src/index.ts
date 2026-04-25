@@ -25,6 +25,7 @@ import {
   NameWrapperABI,
   addresses,
   extractField,
+  paymasterProxyRpcUrl,
 } from "@ipe-gov/sdk";
 import {
   HttpError,
@@ -38,16 +39,10 @@ import {
 } from "@ipe-gov/workers-shared";
 
 type Env = {
-  /** Sepolia RPC; used to verify Unlock membership before issuing a claim. */
-  RPC_URL_11155111: string;
-  /** Paymaster-proxy URL for chain 1 (e.g. https://…/rpc/1). Used both for
-   *  reads (forwarded to upstream) and bundler/paymaster methods (routed to
-   *  Pimlico). The proxy gates paymaster methods via the operator allowlist
-   *  — this worker's key must be in `OPERATOR_ALLOWLIST_1`. */
-  RPC_URL_1: string;
   /** 0x-prefixed private key of the hot wallet that holds NameWrapper
    *  setApprovalForAll on the parent. Doesn't need an ETH balance — gas is
-   *  paid by Pimlico via the paymaster-proxy. */
+   *  paid by Pimlico via the paymaster-proxy. The address must appear in the
+   *  proxy's `OPERATOR_ALLOWLIST_1` so the policy check passes. */
   MAINNET_OPERATOR_KEY: string;
   /** Comma-separated CORS allowlist. */
   ALLOWED_ORIGINS?: string;
@@ -103,7 +98,7 @@ app.get("/ens/available", async (c) => {
   try {
     const fullName = `${parsed.data}.${ENS_PARENT_NAME}`;
     const node = namehash(fullName);
-    const owner = await readNodeOwner(buildMainnetReadClient(c.env), node);
+    const owner = await readNodeOwner(buildMainnetReadClient(), node);
     return c.json({ available: owner === zeroAddress, label: parsed.data });
   } catch (err) {
     return errorResponse(c, err);
@@ -145,13 +140,13 @@ app.post("/ens/claim", async (c) => {
       throw new HttpError(400, "message does not match submitted recipient/label");
     }
 
-    await assertSepoliaUnlockMember(c.env, body.recipient);
+    await assertSepoliaUnlockMember(body.recipient);
 
     const fullName = `${body.label}.${ENS_PARENT_NAME}`;
     const node = namehash(fullName);
     const parentNode = namehash(ENS_PARENT_NAME);
 
-    const mainnetReadClient = buildMainnetReadClient(c.env);
+    const mainnetReadClient = buildMainnetReadClient();
 
     // Hard pre-check: label not already minted. The on-chain mint would
     // revert anyway, but this gives a clean 409 before we send a tx.
@@ -219,7 +214,7 @@ app.get("/ens/identity/:address", async (c) => {
     const claim = await getClaimByAddress(c.env, parsed.data);
     if (!claim) return c.json({ identity: null });
 
-    if (!(await isClaimStillLive(buildMainnetReadClient(c.env), claim))) {
+    if (!(await isClaimStillLive(buildMainnetReadClient(), claim))) {
       return c.json({ identity: null });
     }
 
@@ -243,7 +238,7 @@ app.get("/ens/identities", async (c) => {
     const claims = await listClaims(c.env);
     if (claims.length === 0) return c.json({ identities: [] });
 
-    const mainnetClient = buildMainnetReadClient(c.env);
+    const mainnetClient = buildMainnetReadClient();
     const live = await Promise.all(
       claims.map(async (claim) => ((await isClaimStillLive(mainnetClient, claim)) ? claim : null)),
     );
@@ -266,13 +261,16 @@ app.get("/ens/identities", async (c) => {
 // ---- ens-api-specific helpers ----------------------------------------------
 
 function buildOperatorWallet(env: Env) {
-  if (!env.RPC_URL_1) throw new HttpError(500, "server missing RPC_URL_1");
   if (!env.MAINNET_OPERATOR_KEY) throw new HttpError(500, "server missing MAINNET_OPERATOR_KEY");
   const key = env.MAINNET_OPERATOR_KEY.startsWith("0x")
     ? (env.MAINNET_OPERATOR_KEY as Hex)
     : (`0x${env.MAINNET_OPERATOR_KEY}` as Hex);
   const account = privateKeyToAccount(key);
-  return createWalletClient({ account, chain: mainnet, transport: http(env.RPC_URL_1) });
+  return createWalletClient({
+    account,
+    chain: mainnet,
+    transport: http(paymasterProxyRpcUrl(mainnet.id)),
+  });
 }
 
 /**
@@ -298,15 +296,16 @@ async function sponsoredMint(
     entryPoint: { address: entryPoint08Address, version: "0.8" },
   });
 
+  const mainnetRpc = paymasterProxyRpcUrl(mainnet.id);
   const pimlicoClient = createPimlicoClient({
     chain: mainnet,
-    transport: http(env.RPC_URL_1),
+    transport: http(mainnetRpc),
   });
 
   const smartAccountClient = createSmartAccountClient({
     account: smartAccount,
     chain: mainnet,
-    bundlerTransport: http(env.RPC_URL_1),
+    bundlerTransport: http(mainnetRpc),
     paymaster: pimlicoClient,
     userOperation: {
       estimateFeesPerGas: async () =>

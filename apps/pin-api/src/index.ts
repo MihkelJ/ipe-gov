@@ -26,7 +26,6 @@ import {
 
 type Env = {
   PINATA_JWT: string;
-  RPC_URL_11155111: string;
   ALLOWED_ORIGINS?: string;
 };
 
@@ -90,7 +89,7 @@ app.post("/pin", async (c) => {
       );
     }
 
-    await assertSepoliaUnlockMember(c.env, body.address);
+    await assertSepoliaUnlockMember(body.address);
 
     if (!c.env.PINATA_JWT) throw new HttpError(500, "server missing PINATA_JWT");
 
@@ -177,7 +176,7 @@ app.post("/pin-image", async (c) => {
       expectedIntent: "pin avatar image",
     });
 
-    await assertSepoliaUnlockMember(c.env, address as Hex);
+    await assertSepoliaUnlockMember(address as Hex);
 
     if (!c.env.PINATA_JWT) throw new HttpError(500, "server missing PINATA_JWT");
 

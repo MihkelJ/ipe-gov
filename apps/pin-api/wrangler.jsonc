@@ -7,7 +7,10 @@
   "observability": { "enabled": true }
   // Secrets (set via `wrangler secret put <NAME>`):
   //   PINATA_JWT          Pinata API JWT for pinJSONToIPFS
-  //   RPC_URL_11155111    Sepolia RPC, e.g. https://sepolia.infura.io/v3/<key>
+  //
+  // Sepolia reads (Unlock membership check) route through paymaster-proxy
+  // via the `paymasterProxyRpcUrl` helper in @ipe-gov/sdk — no RPC secret
+  // needed on this worker.
   // Public origin allowlist (comma separated). Set with `wrangler secret put`
   // or as a regular var in vars below.
   // "vars": {

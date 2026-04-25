@@ -1,31 +1,22 @@
 import { createPublicClient, http } from "viem";
 import { mainnet, sepolia } from "viem/chains";
-import { HttpError } from "./error";
+import { paymasterProxyRpcUrl } from "@ipe-gov/sdk";
 
-export type SepoliaEnv = { RPC_URL_11155111: string };
-export type MainnetEnv = { RPC_URL_1: string };
-
-/** Public read-only viem client for Sepolia. Throws if the RPC URL secret
- *  is missing so the worker fails fast instead of leaking a confusing
- *  ENOTFOUND. */
-export function buildSepoliaReadClient(env: SepoliaEnv) {
-  if (!env.RPC_URL_11155111) {
-    throw new HttpError(500, "server missing RPC_URL_11155111");
-  }
+/** Public read-only viem client for Sepolia, routed through paymaster-proxy
+ *  so the upstream RPC URL only lives on that worker. */
+export function buildSepoliaReadClient() {
   return createPublicClient({
     chain: sepolia,
-    transport: http(env.RPC_URL_11155111),
+    transport: http(paymasterProxyRpcUrl(sepolia.id)),
   });
 }
 
-/** Public read-only viem client for Ethereum mainnet. */
-export function buildMainnetReadClient(env: MainnetEnv) {
-  if (!env.RPC_URL_1) {
-    throw new HttpError(500, "server missing RPC_URL_1");
-  }
+/** Public read-only viem client for Ethereum mainnet, routed through
+ *  paymaster-proxy. */
+export function buildMainnetReadClient() {
   return createPublicClient({
     chain: mainnet,
-    transport: http(env.RPC_URL_1),
+    transport: http(paymasterProxyRpcUrl(mainnet.id)),
   });
 }
 

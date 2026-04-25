@@ -1,15 +1,6 @@
 # Local dev secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored).
 # For production, set these with `wrangler secret put <NAME>`.
 
-# Sepolia RPC URL — used to verify the caller holds a valid Unlock membership key.
-SEPOLIA_RPC_URL=
-
-# Mainnet endpoint. Should point at the paymaster-proxy `/rpc/1` route — the
-# proxy forwards reads to the upstream RPC and routes UserOps to Pimlico, so
-# this single URL covers both NameWrapper.ownerOf reads AND sponsored mint
-# submissions. Example: https://ipe-gov-paymaster-proxy.<your>.workers.dev/rpc/1
-MAINNET_RPC_URL=
-
 # 0x-prefixed private key of the hot wallet whose address has
 # setApprovalForAll(true) on the parent name's NameWrapper position. Gas is
 # paid by Pimlico via the paymaster-proxy, so this wallet does NOT need an
@@ -18,8 +9,9 @@ MAINNET_RPC_URL=
 # as a hot key — revoke NameWrapper approval from the owner wallet if it leaks.
 MAINNET_OPERATOR_KEY=
 
-# ENS parent name (pilot: govdemo.eth).
-ENS_PARENT_NAME=govdemo.eth
-
 # Comma-separated CORS allowlist (optional; defaults to *).
 ALLOWED_ORIGINS=http://localhost:3000
+
+# All RPC traffic (Sepolia membership check + mainnet NameWrapper reads +
+# sponsored mint UserOps) routes through the deployed paymaster-proxy via
+# @ipe-gov/sdk's `paymasterProxyRpcUrl` helper — no RPC URLs needed here.
