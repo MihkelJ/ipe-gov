@@ -18,6 +18,7 @@ import { to7702SimpleSmartAccount } from "permissionless/accounts";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { z } from "zod";
 import {
+  ENS_PARENT_NAME,
   LABEL_RE,
   MAX_LABEL_LEN,
   MIN_LABEL_LEN,
@@ -48,8 +49,6 @@ type Env = {
    *  setApprovalForAll on the parent. Doesn't need an ETH balance — gas is
    *  paid by Pimlico via the paymaster-proxy. */
   MAINNET_OPERATOR_KEY: string;
-  /** ENS parent under which subnames are issued (e.g. "govdemo.eth"). */
-  ENS_PARENT_NAME: string;
   /** Comma-separated CORS allowlist. */
   ALLOWED_ORIGINS?: string;
   /** KV: stores the issued-claims log under key `claims:all`. */
@@ -102,7 +101,7 @@ app.get("/ens/available", async (c) => {
   }
 
   try {
-    const fullName = `${parsed.data}.${c.env.ENS_PARENT_NAME}`;
+    const fullName = `${parsed.data}.${ENS_PARENT_NAME}`;
     const node = namehash(fullName);
     const owner = await readNodeOwner(buildMainnetReadClient(c.env), node);
     return c.json({ available: owner === zeroAddress, label: parsed.data });
@@ -148,9 +147,9 @@ app.post("/ens/claim", async (c) => {
 
     await assertSepoliaUnlockMember(c.env, body.recipient);
 
-    const fullName = `${body.label}.${c.env.ENS_PARENT_NAME}`;
+    const fullName = `${body.label}.${ENS_PARENT_NAME}`;
     const node = namehash(fullName);
-    const parentNode = namehash(c.env.ENS_PARENT_NAME);
+    const parentNode = namehash(ENS_PARENT_NAME);
 
     const mainnetReadClient = buildMainnetReadClient(c.env);
 

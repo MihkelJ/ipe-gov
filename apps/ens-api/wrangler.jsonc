@@ -10,7 +10,6 @@
   //   RPC_URL_1             Mainnet RPC; read NameWrapper + write subname mints.
   //   MAINNET_OPERATOR_KEY  0x-prefixed private key for the hot wallet that
   //                         has setApprovalForAll on govdemo.eth.
-  //   ENS_PARENT_NAME       Parent name, e.g. "govdemo.eth".
   //   ALLOWED_ORIGINS       Comma-separated CORS allowlist (optional).
   //
   // KV namespace stores `{ address, label, node, fullName, txHash, mintedAt }`
