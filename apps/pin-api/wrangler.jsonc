@@ -7,7 +7,7 @@
   "observability": { "enabled": true }
   // Secrets (set via `wrangler secret put <NAME>`):
   //   PINATA_JWT          Pinata API JWT for pinJSONToIPFS
-  //   SEPOLIA_RPC_URL     e.g. https://sepolia.infura.io/v3/<key>
+  //   RPC_URL_11155111    Sepolia RPC, e.g. https://sepolia.infura.io/v3/<key>
   // Public origin allowlist (comma separated). Set with `wrangler secret put`
   // or as a regular var in vars below.
   // "vars": {

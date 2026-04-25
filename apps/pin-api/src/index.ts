@@ -26,7 +26,7 @@ import {
 
 type Env = {
   PINATA_JWT: string;
-  SEPOLIA_RPC_URL: string;
+  RPC_URL_11155111: string;
   ALLOWED_ORIGINS?: string;
 };
 

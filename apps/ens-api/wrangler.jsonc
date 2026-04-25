@@ -6,8 +6,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   // Secrets (set via `wrangler secret put <NAME>`):
-  //   SEPOLIA_RPC_URL       Used to verify Unlock membership before claim.
-  //   MAINNET_RPC_URL       Used to read NameWrapper + write subname mints.
+  //   RPC_URL_11155111      Sepolia RPC; verify Unlock membership before claim.
+  //   RPC_URL_1             Mainnet RPC; read NameWrapper + write subname mints.
   //   MAINNET_OPERATOR_KEY  0x-prefixed private key for the hot wallet that
   //                         has setApprovalForAll on govdemo.eth.
   //   ENS_PARENT_NAME       Parent name, e.g. "govdemo.eth".

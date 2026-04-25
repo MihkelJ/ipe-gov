@@ -45,12 +45,12 @@ const SIMPLE_ACCOUNT_7702_IMPL =
 
 type Env = {
   /** Sepolia RPC; used to verify Unlock membership before issuing a claim. */
-  SEPOLIA_RPC_URL: string;
+  RPC_URL_11155111: string;
   /** Paymaster-proxy URL for chain 1 (e.g. https://…/rpc/1). Used both for
    *  reads (forwarded to upstream) and bundler/paymaster methods (routed to
    *  Pimlico). The proxy gates paymaster methods via the operator allowlist
    *  — this worker's key must be in `OPERATOR_ALLOWLIST_1`. */
-  MAINNET_RPC_URL: string;
+  RPC_URL_1: string;
   /** 0x-prefixed private key of the hot wallet that holds NameWrapper
    *  setApprovalForAll on the parent. Doesn't need an ETH balance — gas is
    *  paid by Pimlico via the paymaster-proxy. */
@@ -274,13 +274,13 @@ app.get("/ens/identities", async (c) => {
 // ---- ens-api-specific helpers ----------------------------------------------
 
 function buildOperatorWallet(env: Env) {
-  if (!env.MAINNET_RPC_URL) throw new HttpError(500, "server missing MAINNET_RPC_URL");
+  if (!env.RPC_URL_1) throw new HttpError(500, "server missing RPC_URL_1");
   if (!env.MAINNET_OPERATOR_KEY) throw new HttpError(500, "server missing MAINNET_OPERATOR_KEY");
   const key = env.MAINNET_OPERATOR_KEY.startsWith("0x")
     ? (env.MAINNET_OPERATOR_KEY as Hex)
     : (`0x${env.MAINNET_OPERATOR_KEY}` as Hex);
   const account = privateKeyToAccount(key);
-  return createWalletClient({ account, chain: mainnet, transport: http(env.MAINNET_RPC_URL) });
+  return createWalletClient({ account, chain: mainnet, transport: http(env.RPC_URL_1) });
 }
 
 /**
@@ -308,13 +308,13 @@ async function sponsoredMint(
 
   const pimlicoClient = createPimlicoClient({
     chain: mainnet,
-    transport: http(env.MAINNET_RPC_URL),
+    transport: http(env.RPC_URL_1),
   });
 
   const smartAccountClient = createSmartAccountClient({
     account: smartAccount,
     chain: mainnet,
-    bundlerTransport: http(env.MAINNET_RPC_URL),
+    bundlerTransport: http(env.RPC_URL_1),
     paymaster: pimlicoClient,
     userOperation: {
       estimateFeesPerGas: async () =>
