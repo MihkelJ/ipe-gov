@@ -30,13 +30,6 @@ const PAYMASTER_URL = PAYMASTER_BASE
   ? `${PAYMASTER_BASE}/${sepolia.id}`
   : undefined;
 
-// Pimlico-published SimpleAccount 7702 delegation target — same across chains.
-// Matches permissionless's own `accountLogicAddress` default, so an EOA that
-// was already delegated via this flow stays pointed at the implementation our
-// SmartAccountClient knows about.
-const SIMPLE_ACCOUNT_7702_IMPL =
-  "0xe6Cae83BdE06E4c305530e199D7217f42808555B" as const;
-
 /**
  * Submit a contract write, sponsored by Pimlico.
  *
@@ -157,7 +150,7 @@ export function useSponsoredWrite() {
         ? undefined
         : await signAuthorization(
             {
-              contractAddress: SIMPLE_ACCOUNT_7702_IMPL,
+              contractAddress: smartAccount.authorization.address,
               chainId: sepolia.id,
             },
             { address: client.account.address },

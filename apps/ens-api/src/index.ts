@@ -36,13 +36,6 @@ import {
   type MainnetReadClient,
 } from "@ipe-gov/workers-shared";
 
-/** Pimlico-published SimpleAccount 7702 delegation target — same address
- *  across every chain Pimlico supports. Delegating the operator EOA here
- *  unlocks bundler-based sponsorship while leaving the wallet's private
- *  key as the sole authorization root. */
-const SIMPLE_ACCOUNT_7702_IMPL =
-  "0xe6Cae83BdE06E4c305530e199D7217f42808555B" as const;
-
 type Env = {
   /** Sepolia RPC; used to verify Unlock membership before issuing a claim. */
   RPC_URL_11155111: string;
@@ -333,7 +326,7 @@ async function sponsoredMint(
   const authorization = alreadyDelegated
     ? undefined
     : await wallet.signAuthorization({
-        contractAddress: SIMPLE_ACCOUNT_7702_IMPL,
+        contractAddress: smartAccount.authorization.address,
         chainId: mainnet.id,
       });
 
