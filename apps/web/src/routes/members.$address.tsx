@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ExternalLink } from 'lucide-react'
-import { useMemo } from 'react'
+import { Check, Copy } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { formatUnits, getAddress, isAddress, type Hex } from 'viem'
 import { ENS_PARENT_NAME, tokens } from '@ipe-gov/sdk'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import { Card, CardContent } from '#/components/ui/card'
 import { Skeleton } from '#/components/ui/skeleton'
 import { useAllMembers, type MemberKey } from '#/hooks/useMembers'
 import { useMemberBalances } from '#/hooks/useMemberBalances'
@@ -14,6 +17,7 @@ import { useProposalsByAuthor, type AuthoredProposal } from '#/hooks/useProposal
 import { useMemberActivity, type MemberActivityRow } from '#/hooks/useMemberActivity'
 import { useProposalDescription } from '#/hooks/useProposalDescription'
 import { truncateAddress } from '#/lib/address'
+import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/members/$address')({
   head: ({ params }) => ({
@@ -31,6 +35,7 @@ function MemberProfileGuarded() {
 }
 
 const EYEBROW = 'font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground'
+const SECTION_HEADING = 'font-mono text-[11px] uppercase tracking-[0.2em] text-foreground'
 const NEVER_THRESHOLD = BigInt(Number.MAX_SAFE_INTEGER)
 const TEXT_KEYS = ['description', 'url', 'com.twitter', 'com.github', 'email'] as const
 
@@ -47,13 +52,13 @@ function MemberProfilePage() {
 
 function InvalidAddress({ raw }: { raw: string }) {
   return (
-    <main className="mx-auto max-w-3xl px-6 pb-24 pt-24 text-center">
+    <main className="mx-auto max-w-3xl px-4 pb-24 pt-20 text-center sm:px-6 sm:pt-24">
       <div className={EYEBROW}>§ Member · Not found</div>
-      <h1 className="mt-5 text-4xl font-semibold tracking-tight">
+      <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
         That doesn&rsquo;t look like an address.
       </h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        <code className="font-mono">{raw}</code> isn&rsquo;t a valid 0x address.
+        <code className="font-mono break-all">{raw}</code> isn&rsquo;t a valid 0x address.
       </p>
       <Link
         to="/members"
@@ -64,6 +69,8 @@ function InvalidAddress({ raw }: { raw: string }) {
     </main>
   )
 }
+
+type StatusKind = 'loading' | 'member' | 'former' | 'none'
 
 function Dossier({ address }: { address: Hex }) {
   const { data: identity, isLoading: identityLoading } = useIdentity(address)
@@ -90,68 +97,38 @@ function Dossier({ address }: { address: Hex }) {
 
   const subname = identity && identity.endsWith(`.${ENS_PARENT_NAME}`) ? identity : undefined
   const ensName = identity && !subname ? identity : undefined
+  const displayName = subname ?? ensName ?? null
 
   return (
-    <main className="mx-auto max-w-6xl px-6 pb-24 pt-12 md:pt-16">
-      <div className="mb-10">
+    <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-8 sm:px-6 sm:pt-12">
+      <div className="mb-6 sm:mb-10">
         <Link
           to="/members"
-          className={`${EYEBROW} transition-colors hover:text-foreground`}
+          className={cn(EYEBROW, 'transition-colors hover:text-foreground')}
         >
           ← The register
         </Link>
       </div>
 
-      <header className="grid grid-cols-12 items-end gap-x-8 gap-y-8 border-b border-border pb-10">
-        <div className="col-span-12 md:col-span-7">
-          <div className={EYEBROW}>§ Member · Dossier</div>
-          <div className="mt-6 flex items-center gap-5">
-            <Avatar size="lg">
-              {avatarUrl ? <AvatarImage src={avatarUrl} alt={identity ?? address} /> : null}
-              <AvatarFallback className="font-mono text-sm uppercase tracking-wider">
-                {(identity ? identity.slice(0, 2) : address.slice(2, 4)).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <h1 className="break-words text-4xl font-semibold leading-[0.95] tracking-tight md:text-5xl">
-                {identityLoading ? (
-                  <Skeleton className="h-10 w-64" />
-                ) : identity ? (
-                  identity
-                ) : (
-                  <span className="font-mono">{truncateAddress(address)}</span>
-                )}
-              </h1>
-              <div className="mt-3 flex items-center gap-3">
-                <code className="font-mono text-xs text-muted-foreground">
-                  {truncateAddress(address)}
-                </code>
-                <a
-                  href={`https://sepolia.etherscan.io/address/${address}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label="View on Etherscan"
-                >
-                  <ExternalLink className="size-3.5" />
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-        <PassportStrip
-          address={address}
-          status={status}
-          subname={subname}
-          ensName={ensName}
-          member={member}
-          balance={balance}
-          balanceLoading={balanceLoading}
-          nowSec={nowSec}
-        />
-      </header>
+      <div className={cn(EYEBROW, 'mb-4')}>§ Member · Dossier</div>
 
-      <IdentityPanel name={subname ?? ensName ?? null} />
+      <IdentityHero
+        address={address}
+        identity={identity ?? null}
+        identityLoading={identityLoading}
+        avatarUrl={avatarUrl}
+        status={status}
+      />
+
+      <PassportStrip
+        status={status}
+        member={member}
+        balance={balance}
+        balanceLoading={balanceLoading}
+        nowSec={nowSec}
+      />
+
+      <IdentityPanel name={displayName} />
 
       <AuthoredSection address={address} />
 
@@ -160,67 +137,215 @@ function Dossier({ address }: { address: Hex }) {
   )
 }
 
-type StatusKind = 'loading' | 'member' | 'former' | 'none'
+/* ─────────────────────────  Hero  ───────────────────────── */
+
+function IdentityHero({
+  address,
+  identity,
+  identityLoading,
+  avatarUrl,
+  status,
+}: {
+  address: Hex
+  identity: string | null
+  identityLoading: boolean
+  avatarUrl: string | undefined | null
+  status: StatusKind
+}) {
+  const initials = (identity ? identity.slice(0, 2) : address.slice(2, 4)).toUpperCase()
+
+  return (
+    <Card className="overflow-hidden py-0 shadow-none">
+      <CardContent
+        className={cn(
+          'grid gap-5 p-5 sm:p-7',
+          'grid-cols-1 md:grid-cols-[auto_1fr_auto] md:items-center md:gap-7',
+        )}
+      >
+        <div className="flex items-start justify-between gap-3 md:contents">
+          <Avatar className="size-16 rounded-2xl sm:size-20 md:size-24">
+            {avatarUrl ? (
+              <AvatarImage
+                src={avatarUrl}
+                alt={identity ?? address}
+                className="rounded-2xl object-cover"
+              />
+            ) : null}
+            <AvatarFallback className="rounded-2xl font-mono text-base uppercase tracking-wider">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="md:hidden">
+            <StatusBadge status={status} />
+          </div>
+        </div>
+
+        <div className="min-w-0 space-y-3">
+          <h1
+            className={cn(
+              'min-w-0 break-words font-semibold leading-[1.02] tracking-tight',
+              'text-[clamp(1.65rem,7vw,3rem)]',
+            )}
+          >
+            {identityLoading ? (
+              <Skeleton className="h-9 w-56 sm:h-12 sm:w-72" />
+            ) : identity ? (
+              identity
+            ) : (
+              <span className="font-mono">{truncateAddress(address)}</span>
+            )}
+          </h1>
+
+          <div className="hidden flex-wrap items-center gap-2 md:flex">
+            <StatusBadge status={status} />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 md:flex-col md:items-stretch md:justify-self-end">
+          <CopyButton value={address} label="Copy address" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function StatusBadge({ status }: { status: StatusKind }) {
+  if (status === 'loading') {
+    return (
+      <Badge
+        variant="outline"
+        className="rounded-none font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+      >
+        Resolving…
+      </Badge>
+    )
+  }
+  if (status === 'member') {
+    return (
+      <Badge
+        variant="outline"
+        className="rounded-none border-foreground/80 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground"
+      >
+        <span className="mr-1.5 inline-block size-1.5 rounded-full bg-emerald-500" />
+        Member · Active
+      </Badge>
+    )
+  }
+  if (status === 'former') {
+    return (
+      <Badge
+        variant="outline"
+        className="rounded-none font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+      >
+        Former member
+      </Badge>
+    )
+  }
+  return (
+    <Badge
+      variant="outline"
+      className="rounded-none border-dashed font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+    >
+      Not a member
+    </Badge>
+  )
+}
+
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false)
+  async function handle() {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* ignore */
+    }
+  }
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handle}
+      className="gap-1.5"
+      aria-label={label}
+    >
+      {copied ? (
+        <>
+          <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+          Copied
+        </>
+      ) : (
+        <>
+          <Copy className="size-3.5" />
+          {label}
+        </>
+      )}
+    </Button>
+  )
+}
+
+/* ─────────────────────────  Passport strip  ───────────────────────── */
 
 function PassportStrip({
-  address,
   status,
-  subname,
-  ensName,
   member,
   balance,
   balanceLoading,
   nowSec,
 }: {
-  address: Hex
   status: StatusKind
-  subname: string | undefined
-  ensName: string | undefined
   member: MemberKey | undefined
   balance: bigint | undefined
   balanceLoading: boolean
   nowSec: bigint
 }) {
-  const statusLabel =
-    status === 'loading'
-      ? 'Resolving…'
-      : status === 'member'
-        ? 'Member · Active'
-        : status === 'former'
-          ? 'Former member'
-          : 'Not a member'
-
   const expires = member ? describeExpiry(member.expiration, nowSec) : null
   const balanceLabel =
     balance !== undefined
-      ? formatToken(balance, tokens.base.ipe.decimals)
+      ? `${formatToken(balance, tokens.base.ipe.decimals)} ${tokens.base.ipe.symbol}`
       : balanceLoading
         ? '…'
-        : '—'
+        : `— ${tokens.base.ipe.symbol}`
 
-  const rows: Array<[string, React.ReactNode]> = [
-    ['Address', <code key="a" className="font-mono">{truncateAddress(address)}</code>],
-    ['Subname', subname ?? '—'],
-    ['ENS', ensName ?? (subname ? '—' : '—')],
-    ['Status', statusLabel],
+  const cells: Array<[string, React.ReactNode]> = [
+    ['Status', statusLabel(status)],
     ['Joined', member ? `block ${member.createdAtBlock.toLocaleString()}` : '—'],
     ['Expires', expires ? expires.label : '—'],
     [`IPE · ${tokens.base.ipe.symbol}`, balanceLabel],
   ]
 
   return (
-    <dl className="col-span-12 grid grid-cols-2 gap-x-8 gap-y-3 text-right md:col-span-5 md:justify-self-end">
-      {rows.map(([k, v]) => (
-        <div key={k} className="contents">
-          <dt className="text-left font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+    <dl
+      className={cn(
+        'mt-7 flex gap-x-6 gap-y-3 overflow-x-auto pb-1 font-mono text-xs',
+        'md:grid md:grid-cols-4 md:gap-x-8 md:overflow-visible',
+      )}
+    >
+      {cells.map(([k, v]) => (
+        <div
+          key={k}
+          className="flex min-w-[8.5rem] shrink-0 flex-col gap-1 border-t border-border pt-2 md:min-w-0"
+        >
+          <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             {k}
           </dt>
-          <dd className="truncate font-mono text-[12px] text-foreground/85">{v}</dd>
+          <dd className="truncate text-foreground/90">{v}</dd>
         </div>
       ))}
     </dl>
   )
 }
+
+function statusLabel(status: StatusKind): string {
+  if (status === 'loading') return 'Resolving…'
+  if (status === 'member') return 'Active'
+  if (status === 'former') return 'Former'
+  return 'Not a member'
+}
+
+/* ─────────────────────────  Identity records  ───────────────────────── */
 
 function IdentityPanel({ name }: { name: string | null }) {
   const { data: records, isLoading } = useEnsTextRecords(name, TEXT_KEYS)
@@ -235,65 +360,102 @@ function IdentityPanel({ name }: { name: string | null }) {
   if (!isLoading && present.length === 0) return null
 
   return (
-    <section className="border-b border-border py-12">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
-          §&nbsp;01&nbsp;&nbsp;Identity
-        </h2>
-        <span className={EYEBROW}>{name}</span>
-      </div>
+    <section className="mt-10 border-t border-border pt-10 sm:mt-14 sm:pt-12">
+      <SectionHead num="01" title="Identity" />
       {isLoading ? (
-        <Skeleton className="h-16 w-full max-w-xl" />
+        <Skeleton className="mt-6 h-16 w-full max-w-xl" />
       ) : (
-        <dl className="grid gap-y-4 md:grid-cols-[10rem_1fr] md:gap-x-8">
-          {present.map(([k, v]) => (
-            <div key={k} className="contents">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                {prettyKey(k)}
-              </dt>
-              <dd className="font-serif text-[15px] leading-relaxed text-foreground/90 break-words">
-                {isUrl(v) ? (
-                  <a
-                    href={v}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="underline decoration-foreground/30 underline-offset-4 transition-colors hover:decoration-foreground"
-                  >
-                    {v}
-                  </a>
-                ) : (
-                  v
+        <dl className="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+          {present.map(([k, v]) => {
+            const isBio = k === 'description'
+            return (
+              <div
+                key={k}
+                className={cn(
+                  'flex flex-col gap-2',
+                  isBio ? 'sm:col-span-2' : 'min-w-0',
                 )}
-              </dd>
-            </div>
-          ))}
+              >
+                <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {prettyKey(k)}
+                </dt>
+                <dd
+                  className={cn(
+                    'break-words text-foreground/90',
+                    isBio
+                      ? 'max-w-2xl font-serif text-[17px] leading-relaxed'
+                      : 'font-mono text-[13px]',
+                  )}
+                >
+                  {isUrl(v) ? (
+                    <a
+                      href={v}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="underline decoration-foreground/30 underline-offset-4 transition-colors hover:decoration-foreground"
+                    >
+                      {v}
+                    </a>
+                  ) : (
+                    v
+                  )}
+                </dd>
+              </div>
+            )
+          })}
         </dl>
       )}
     </section>
   )
 }
 
+/* ─────────────────────────  Section heading  ───────────────────────── */
+
+function SectionHead({
+  num,
+  title,
+  trailing,
+}: {
+  num: string
+  title: string
+  trailing?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+      <h2 className={SECTION_HEADING}>
+        §&nbsp;{num}&nbsp;&nbsp;{title}
+      </h2>
+      {trailing != null ? (
+        <span className={cn(EYEBROW, 'truncate')}>{trailing}</span>
+      ) : null}
+    </div>
+  )
+}
+
+/* ─────────────────────────  Authored motions  ───────────────────────── */
+
 function AuthoredSection({ address }: { address: Hex }) {
   const { data: authored, isLoading } = useProposalsByAuthor(address)
 
   return (
-    <section className="border-b border-border py-12">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
-          §&nbsp;02&nbsp;&nbsp;Motions authored
-        </h2>
-        <span className={EYEBROW}>
-          {isLoading ? '…' : `${authored.length} ${authored.length === 1 ? 'motion' : 'motions'}`}
-        </span>
-      </div>
+    <section className="mt-10 border-t border-border pt-10 sm:mt-14 sm:pt-12">
+      <SectionHead
+        num="02"
+        title="Motions authored"
+        trailing={
+          isLoading
+            ? '…'
+            : `${authored.length} ${authored.length === 1 ? 'motion' : 'motions'}`
+        }
+      />
       {isLoading ? (
-        <Skeleton className="h-16 w-full" />
+        <Skeleton className="mt-6 h-16 w-full" />
       ) : authored.length === 0 ? (
         <EmptyNote>
           No motions authored yet — when this member files one, it&rsquo;ll surface here.
         </EmptyNote>
       ) : (
-        <ol className="border-t border-border">
+        <ol className="mt-6 divide-y divide-border border-y border-border">
           {authored.map((p) => (
             <AuthoredRow key={p.id.toString()} proposal={p} />
           ))}
@@ -306,31 +468,37 @@ function AuthoredSection({ address }: { address: Hex }) {
 function AuthoredRow({ proposal }: { proposal: AuthoredProposal }) {
   const { body, text, isLoading } = useProposalDescription(proposal.descriptionCid)
   const title = body?.headline ?? text ?? `Proposal #${proposal.id.toString()}`
+  const stateLabel = proposal.finalized ? 'Finalized' : 'Open'
+
   return (
-    <li className="border-b border-border">
+    <li>
       <Link
         to="/proposals/$proposalId"
         params={{ proposalId: proposal.id.toString() }}
-        className="grid grid-cols-[3.5rem_minmax(0,1fr)_8rem] items-baseline gap-4 py-5 transition-colors hover:bg-accent/40"
+        className="flex items-start gap-4 px-1 py-5 transition-colors hover:bg-accent/40 sm:gap-6 sm:py-6"
       >
-        <span className="font-light tabular-nums text-muted-foreground text-2xl">
+        <span className="shrink-0 pt-0.5 font-light tabular-nums text-muted-foreground text-xl sm:text-2xl">
           {proposal.id.toString().padStart(2, '0')}
         </span>
-        <span className="min-w-0">
-          <span className="block truncate font-serif text-[17px] text-foreground">
-            {isLoading ? '…' : title}
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="font-serif text-[16px] leading-snug text-foreground sm:truncate sm:text-[17px]">
+              {isLoading ? '…' : title}
+            </div>
+            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              ends · block {proposal.endBlock.toLocaleString()}
+            </div>
+          </div>
+          <span className="self-start font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:self-auto sm:text-right">
+            {stateLabel}
           </span>
-          <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            block {proposal.endBlock.toString()}
-          </span>
-        </span>
-        <span className="text-right font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          {proposal.finalized ? 'Finalized' : 'Open'}
-        </span>
+        </div>
       </Link>
     </li>
   )
 }
+
+/* ─────────────────────────  Activity  ───────────────────────── */
 
 function ActivitySection({ address }: { address: Hex }) {
   const { rows, isLoading } = useMemberActivity(address)
@@ -343,23 +511,20 @@ function ActivitySection({ address }: { address: Hex }) {
   )
 
   return (
-    <section className="py-12">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
-          §&nbsp;03&nbsp;&nbsp;Voting &amp; delegation
-        </h2>
-        <span className={EYEBROW}>
-          {isLoading ? '…' : `${visible.length} active`}
-        </span>
-      </div>
+    <section className="mt-10 border-t border-border pt-10 sm:mt-14 sm:pt-12">
+      <SectionHead
+        num="03"
+        title="Voting & delegation"
+        trailing={isLoading ? '…' : `${visible.length} active`}
+      />
       {isLoading ? (
-        <Skeleton className="h-16 w-full" />
+        <Skeleton className="mt-6 h-16 w-full" />
       ) : visible.length === 0 ? (
         <EmptyNote>
           No activity recorded yet — votes, delegations and inbound delegators will appear here.
         </EmptyNote>
       ) : (
-        <ul className="border-t border-border">
+        <ul className="mt-6 divide-y divide-border border-y border-border">
           {visible.map((r) => (
             <ActivityRow key={r.proposalId.toString()} row={r} />
           ))}
@@ -389,37 +554,40 @@ function ActivityRow({ row }: { row: MemberActivityRow }) {
     })
 
   return (
-    <li className="border-b border-border">
+    <li>
       <Link
         to="/proposals/$proposalId"
         params={{ proposalId: row.proposalId.toString() }}
-        className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-baseline gap-4 py-5 transition-colors hover:bg-accent/40"
+        className="flex items-start gap-4 px-1 py-5 transition-colors hover:bg-accent/40 sm:gap-6 sm:py-6"
       >
-        <span className="font-light tabular-nums text-muted-foreground text-2xl">
+        <span className="shrink-0 pt-0.5 font-light tabular-nums text-muted-foreground text-xl sm:text-2xl">
           {row.proposalId.toString().padStart(2, '0')}
         </span>
-        <span className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap gap-2">
           {tags.map((t) => (
             <span
               key={t.label}
-              className={`border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] ${
+              className={cn(
+                'border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em]',
                 t.tone === 'on'
                   ? 'border-foreground/80 text-foreground'
-                  : 'border-border text-muted-foreground'
-              }`}
+                  : 'border-border text-muted-foreground',
+              )}
             >
               {t.label}
             </span>
           ))}
-        </span>
+        </div>
       </Link>
     </li>
   )
 }
 
+/* ─────────────────────────  Helpers  ───────────────────────── */
+
 function EmptyNote({ children }: { children: React.ReactNode }) {
   return (
-    <p className="border border-dashed border-border px-5 py-6 font-serif text-[15px] italic text-muted-foreground">
+    <p className="mt-6 border border-dashed border-border px-5 py-6 font-serif text-[15px] italic text-muted-foreground">
       {children}
     </p>
   )
