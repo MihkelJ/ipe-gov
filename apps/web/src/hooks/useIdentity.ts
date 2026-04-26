@@ -86,6 +86,20 @@ export function useClaimedSubnames() {
   })
 }
 
+/** Map of legacy `*.ipecity.eth` wrapped subname owners: `address` →
+ *  `fullName` (e.g. "alice.ipecity.eth"). Shared with `useIdentity` via the
+ *  `ipecity-subnames` query key. Useful for callers that need to search or
+ *  filter members by display name without paying for N reverse-resolution
+ *  RPCs upfront. */
+export function useIpecitySubnames() {
+  return useQuery({
+    queryKey: IPECITY_KEY,
+    staleTime: CLAIMED_STALE_MS,
+    gcTime: DAY,
+    queryFn: () => fetchIpecitySubnames(),
+  })
+}
+
 /** Resolves the ENS `avatar` text record for a name to a usable image URL.
  *  Handles IPFS, NFT (eip155) and HTTP avatars via viem's built-in parser.
  *  One RPC per distinct name; cached for a day.
