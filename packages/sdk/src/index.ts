@@ -4,3 +4,4 @@ export * from "./tokens";
 export * from "./config";
 export * from "./chains";
 export * from "./messages";
+export * from "./eas";
