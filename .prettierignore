@@ -1,0 +1,22 @@
+node_modules
+dist
+build
+.output
+.vinxi
+.turbo
+.wrangler
+artifacts
+cache
+coverage
+types
+typechain-types
+fhevmTemp
+pnpm-lock.yaml
+*.min.js
+*.min.css
+
+# Generated
+apps/web/src/routeTree.gen.ts
+apps/web/.tanstack
+apps/*/worker-configuration.d.ts
+packages/sdk/src/abis/**
