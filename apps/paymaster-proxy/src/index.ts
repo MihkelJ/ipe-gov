@@ -26,11 +26,7 @@ type JsonRpcError = {
   error: { code: number; message: string };
 };
 
-function jsonRpcError(
-  id: JsonRpcRequest["id"],
-  code: number,
-  message: string,
-): JsonRpcError {
+function jsonRpcError(id: JsonRpcRequest["id"], code: number, message: string): JsonRpcError {
   return { jsonrpc: "2.0", id, error: { code, message } };
 }
 
@@ -75,28 +71,15 @@ app.post("/rpc/:chainId", (c) => {
   return handleRpc(c, chainId);
 });
 
-async function handleRpc(
-  c: Context<{ Bindings: Env }>,
-  chainId: number,
-): Promise<Response> {
+async function handleRpc(c: Context<{ Bindings: Env }>, chainId: number): Promise<Response> {
   const config = getChainConfig(chainId);
   if (!config) {
-    return c.json(
-      jsonRpcError(null, -32602, `unsupported chain: ${chainId}`),
-      400,
-    );
+    return c.json(jsonRpcError(null, -32602, `unsupported chain: ${chainId}`), 400);
   }
 
   const nodeRpcUrl = c.env[config.nodeRpcSecretName];
   if (!nodeRpcUrl) {
-    return c.json(
-      jsonRpcError(
-        null,
-        -32000,
-        `server missing ${config.nodeRpcSecretName}`,
-      ),
-      500,
-    );
+    return c.json(jsonRpcError(null, -32000, `server missing ${config.nodeRpcSecretName}`), 500);
   }
 
   let body: JsonRpcRequest;
@@ -128,14 +111,7 @@ async function handleRpc(
   // operator allowlist reject bundler methods cleanly so callers get a
   // useful error instead of an opaque upstream failure.
   if (!config.sponsorship && operatorAllowlist.length === 0) {
-    return c.json(
-      jsonRpcError(
-        id,
-        -32601,
-        `sponsorship not enabled for chain ${chainId}`,
-      ),
-      400,
-    );
+    return c.json(jsonRpcError(id, -32601, `sponsorship not enabled for chain ${chainId}`), 400);
   }
 
   // enforcePolicy is a no-op when params[0] has no sender, so handshake calls
@@ -151,21 +127,11 @@ async function handleRpc(
     if (err instanceof PolicyError) {
       return c.json(jsonRpcError(id, -32001, err.message), 403);
     }
-    return c.json(
-      jsonRpcError(
-        id,
-        -32000,
-        `policy check failed: ${(err as Error).message}`,
-      ),
-      500,
-    );
+    return c.json(jsonRpcError(id, -32000, `policy check failed: ${(err as Error).message}`), 500);
   }
 
   if (!c.env.PIMLICO_API_KEY) {
-    return c.json(
-      jsonRpcError(id, -32000, "server missing PIMLICO_API_KEY"),
-      500,
-    );
+    return c.json(jsonRpcError(id, -32000, "server missing PIMLICO_API_KEY"), 500);
   }
   const upstream = `https://api.pimlico.io/v2/${chainId}/rpc?apikey=${c.env.PIMLICO_API_KEY}`;
   return forward(upstream, body, id, 502);
@@ -197,10 +163,9 @@ async function forward(
       body: JSON.stringify(body),
     });
   } catch (err) {
-    return Response.json(
-      jsonRpcError(id, -32000, `upstream fetch failed: ${(err as Error).message}`),
-      { status: errorStatus },
-    );
+    return Response.json(jsonRpcError(id, -32000, `upstream fetch failed: ${(err as Error).message}`), {
+      status: errorStatus,
+    });
   }
 
   const text = await res.text();

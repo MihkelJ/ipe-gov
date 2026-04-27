@@ -22,7 +22,7 @@
   "kv_namespaces": [
     {
       "binding": "IDENTITIES",
-      "id": "efaa1972b7a04bcebee6930c66f6e84e"
-    }
-  ]
+      "id": "efaa1972b7a04bcebee6930c66f6e84e",
+    },
+  ],
 }

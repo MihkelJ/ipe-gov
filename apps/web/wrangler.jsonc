@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ipe-gov-web",
   "compatibility_date": "2025-09-02",
-  "pages_build_output_dir": "./dist"
+  "pages_build_output_dir": "./dist",
   // Deploy:
   //   pnpm --filter @ipe-gov/web build
   //   pnpm --filter @ipe-gov/web deploy

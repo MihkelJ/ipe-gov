@@ -1,17 +1,10 @@
-import { useEffect, useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { useConnectWallet, usePrivy } from '@privy-io/react-auth'
-import { useAccount } from 'wagmi'
-import { Menu, LogOut, User, Wallet, Plus } from 'lucide-react'
-import { Button } from '#/components/ui/button'
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '#/components/ui/sheet'
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useConnectWallet, usePrivy } from "@privy-io/react-auth";
+import { useAccount } from "wagmi";
+import { Menu, LogOut, User, Wallet, Plus } from "lucide-react";
+import { Button } from "#/components/ui/button";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "#/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,19 +12,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '#/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
-import { Separator } from '#/components/ui/separator'
-import { useEnsAvatar, useIdentity } from '#/hooks/useIdentity'
-import { truncateAddress } from '#/lib/address'
-import ThemeToggle from './ThemeToggle'
+} from "#/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
+import { Separator } from "#/components/ui/separator";
+import { useEnsAvatar, useIdentity } from "#/hooks/useIdentity";
+import { truncateAddress } from "#/lib/address";
+import ThemeToggle from "./ThemeToggle";
 
-type NavItem = { to: string; label: string }
+type NavItem = { to: string; label: string };
 
 const NAV: NavItem[] = [
-  { to: '/proposals', label: 'Proposals' },
-  { to: '/members', label: 'Members' },
-]
+  { to: "/proposals", label: "Proposals" },
+  { to: "/members", label: "Members" },
+];
 
 function Wordmark() {
   return (
@@ -55,34 +48,33 @@ function Wordmark() {
         </span>
       </span>
     </Link>
-  )
+  );
 }
 
 export default function Header() {
-  const { ready, authenticated, login, logout } = usePrivy()
-  const { connectWallet } = useConnectWallet()
-  const { address } = useAccount()
-  const { data: displayName } = useIdentity(address)
-  const { data: avatarUrl } = useEnsAvatar(displayName)
-  const label = displayName ?? (address ? truncateAddress(address) : 'Account')
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { connectWallet } = useConnectWallet();
+  const { address } = useAccount();
+  const { data: displayName } = useIdentity(address);
+  const { data: avatarUrl } = useEnsAvatar(displayName);
+  const label = displayName ?? (address ? truncateAddress(address) : "Account");
   const fallback = displayName
     ? displayName.slice(0, 2).toUpperCase()
     : address
       ? address.slice(2, 4).toUpperCase()
-      : '··'
+      : "··";
 
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const navLinkBase =
-    'text-sm font-medium text-muted-foreground transition-colors hover:text-foreground'
+  const navLinkBase = "text-sm font-medium text-muted-foreground transition-colors hover:text-foreground";
 
   return (
     <header
@@ -100,8 +92,7 @@ export default function Header() {
                 to={item.to}
                 className={`${navLinkBase} relative px-3 py-2 rounded-md hover:bg-accent/60`}
                 activeProps={{
-                  className:
-                    'text-foreground bg-accent/40 [&::after]:opacity-100',
+                  className: "text-foreground bg-accent/40 [&::after]:opacity-100",
                 }}
               >
                 <span>{item.label}</span>
@@ -117,12 +108,7 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           {/* New proposal — desktop only, contextual call-to-action */}
           {authenticated ? (
-            <Button
-              asChild
-              size="sm"
-              variant="ghost"
-              className="hidden lg:inline-flex"
-            >
+            <Button asChild size="sm" variant="ghost" className="hidden lg:inline-flex">
               <Link to="/proposals/new">
                 <Plus />
                 Propose
@@ -145,18 +131,12 @@ export default function Header() {
                   aria-label="Account menu"
                 >
                   <Avatar className="size-6">
-                    {avatarUrl ? (
-                      <AvatarImage src={avatarUrl} alt={label} />
-                    ) : null}
+                    {avatarUrl ? <AvatarImage src={avatarUrl} alt={label} /> : null}
                     <AvatarFallback className="font-mono text-[9px] uppercase tracking-wider">
                       {fallback}
                     </AvatarFallback>
                   </Avatar>
-                  <span
-                    className={`max-w-[10ch] truncate ${displayName ? '' : 'font-mono text-xs'}`}
-                  >
-                    {label}
-                  </span>
+                  <span className={`max-w-[10ch] truncate ${displayName ? "" : "font-mono text-xs"}`}>{label}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -164,11 +144,7 @@ export default function Header() {
                   <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
                     Signed in
                   </span>
-                  <span
-                    className={`truncate ${displayName ? '' : 'font-mono text-xs'}`}
-                  >
-                    {label}
-                  </span>
+                  <span className={`truncate ${displayName ? "" : "font-mono text-xs"}`}>{label}</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -184,10 +160,7 @@ export default function Header() {
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() => logout()}
-                >
+                <DropdownMenuItem variant="destructive" onSelect={() => logout()}>
                   <LogOut />
                   Sign out
                 </DropdownMenuItem>
@@ -202,12 +175,7 @@ export default function Header() {
           {/* Mobile menu trigger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                aria-label="Open menu"
-              >
+              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
                 <Menu />
               </Button>
             </SheetTrigger>
@@ -217,9 +185,7 @@ export default function Header() {
                   <span className="font-semibold tracking-tight">
                     ipe<span className="text-muted-foreground">·</span>gov
                   </span>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                    Menu
-                  </span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">Menu</span>
                 </SheetTitle>
               </SheetHeader>
 
@@ -230,7 +196,7 @@ export default function Header() {
                       to={item.to}
                       className="flex items-center justify-between rounded-md px-3 py-3 text-base font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       activeProps={{
-                        className: 'bg-accent text-foreground',
+                        className: "bg-accent text-foreground",
                       }}
                     >
                       <span>{item.label}</span>
@@ -248,7 +214,7 @@ export default function Header() {
                     <Link
                       to="/profile"
                       className="flex items-center justify-between rounded-md px-3 py-3 text-base font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      activeProps={{ className: 'bg-accent text-foreground' }}
+                      activeProps={{ className: "bg-accent text-foreground" }}
                     >
                       <span>Your profile</span>
                       <span
@@ -276,16 +242,14 @@ export default function Header() {
               <Separator />
 
               <div className="flex flex-col gap-3 p-4">
-                <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                  Account
-                </span>
+                <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">Account</span>
                 {!ready ? (
                   <div className="h-10 rounded-md bg-muted/60 animate-pulse" />
                 ) : !authenticated ? (
                   <Button
                     onClick={() => {
-                      setMobileOpen(false)
-                      login()
+                      setMobileOpen(false);
+                      login();
                     }}
                   >
                     Sign in
@@ -294,9 +258,7 @@ export default function Header() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3 rounded-md border border-border/70 px-3 py-2.5">
                       <Avatar className="size-8">
-                        {avatarUrl ? (
-                          <AvatarImage src={avatarUrl} alt={label} />
-                        ) : null}
+                        {avatarUrl ? <AvatarImage src={avatarUrl} alt={label} /> : null}
                         <AvatarFallback className="font-mono text-[10px] uppercase tracking-wider">
                           {fallback}
                         </AvatarFallback>
@@ -305,19 +267,15 @@ export default function Header() {
                         <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
                           Signed in
                         </span>
-                        <span
-                          className={`truncate ${displayName ? 'text-sm' : 'font-mono text-xs'}`}
-                        >
-                          {label}
-                        </span>
+                        <span className={`truncate ${displayName ? "text-sm" : "font-mono text-xs"}`}>{label}</span>
                       </div>
                     </div>
                     {!address ? (
                       <Button
                         variant="outline"
                         onClick={() => {
-                          setMobileOpen(false)
-                          connectWallet()
+                          setMobileOpen(false);
+                          connectWallet();
                         }}
                       >
                         <Wallet />
@@ -327,8 +285,8 @@ export default function Header() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setMobileOpen(false)
-                        logout()
+                        setMobileOpen(false);
+                        logout();
                       }}
                     >
                       <LogOut />
@@ -337,9 +295,7 @@ export default function Header() {
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                    Theme
-                  </span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">Theme</span>
                   <ThemeToggle />
                 </div>
               </div>
@@ -348,5 +304,5 @@ export default function Header() {
         </div>
       </nav>
     </header>
-  )
+  );
 }

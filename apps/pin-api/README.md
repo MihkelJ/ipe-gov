@@ -1,7 +1,6 @@
 # @ipe-gov/pin-api
 
-Cloudflare Worker that pins proposal descriptions to IPFS on behalf of
-verified Unlock Protocol members.
+Cloudflare Worker that pins proposal descriptions to IPFS on behalf of verified Unlock Protocol members.
 
 ## What it does
 

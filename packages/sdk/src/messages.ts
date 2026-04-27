@@ -45,11 +45,7 @@ export function buildClaimMessage(params: {
 /** Pin-api's proposal-pin message. `bodyHash` binds a structured body to the
  *  signature so a relay can't strip the body and pin a degraded envelope.
  *  Optional because legacy v1 pins (text-only) didn't include it. */
-export function buildPinMessage(
-  address: Hex,
-  timestampMs: number,
-  bodyHash?: Hex,
-): string {
+export function buildPinMessage(address: Hex, timestampMs: number, bodyHash?: Hex): string {
   const lines = [
     "ipe-gov: pin proposal description",
     `address: ${address}`,
@@ -63,11 +59,9 @@ export function buildPinMessage(
  *  integrity for the image bytes, and membership-gating fences off
  *  anonymous uploaders. */
 export function buildPinImageMessage(address: Hex, timestampMs: number): string {
-  return [
-    "ipe-gov: pin avatar image",
-    `address: ${address}`,
-    `timestamp: ${new Date(timestampMs).toISOString()}`,
-  ].join("\n");
+  return ["ipe-gov: pin avatar image", `address: ${address}`, `timestamp: ${new Date(timestampMs).toISOString()}`].join(
+    "\n",
+  );
 }
 
 /** Pulls a `prefix: value` line out of one of our signed messages.

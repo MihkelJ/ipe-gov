@@ -1,19 +1,7 @@
 import { Hono } from "hono";
-import {
-  isAddress,
-  isHash,
-  isHex,
-  keccak256,
-  toBytes,
-  type Hex,
-} from "viem";
+import { isAddress, isHash, isHex, keccak256, toBytes, type Hex } from "viem";
 import { z } from "zod";
-import {
-  ProposalBodySchema,
-  canonicalJson,
-  pinFile,
-  pinProposalDescription,
-} from "@ipe-gov/ipfs";
+import { ProposalBodySchema, canonicalJson, pinFile, pinProposalDescription } from "@ipe-gov/ipfs";
 import { extractField } from "@ipe-gov/sdk";
 import {
   HttpError,
@@ -31,10 +19,7 @@ type Env = {
 
 const PinRequestSchema = z.object({
   text: z.string().min(1).max(8_000),
-  address: z.custom<`0x${string}`>(
-    (v) => typeof v === "string" && isAddress(v, { strict: false }),
-    "invalid address",
-  ),
+  address: z.custom<`0x${string}`>((v) => typeof v === "string" && isAddress(v, { strict: false }), "invalid address"),
   signature: z.custom<`0x${string}`>((v) => isHex(v), "invalid signature"),
   message: z.string().min(1),
   body: ProposalBodySchema.optional(),
@@ -42,12 +27,7 @@ const PinRequestSchema = z.object({
 
 const MAX_PIN_BYTES = 64 * 1024;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-]);
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -83,10 +63,7 @@ app.post("/pin", async (c) => {
         throw new HttpError(401, "body-hash does not match signed body");
       }
     } else if (claimedHash) {
-      throw new HttpError(
-        400,
-        "signed message commits to a body-hash but no body was sent",
-      );
+      throw new HttpError(400, "signed message commits to a body-hash but no body was sent");
     }
 
     await assertSepoliaUnlockMember(body.address);
@@ -138,10 +115,7 @@ app.post("/pin-image", async (c) => {
     // the carriage returns so verifyMessage compares against the same bytes
     // the wallet signed.
     const messageRaw = form.get("message");
-    const message =
-      typeof messageRaw === "string"
-        ? messageRaw.replace(/\r\n/g, "\n")
-        : messageRaw;
+    const message = typeof messageRaw === "string" ? messageRaw.replace(/\r\n/g, "\n") : messageRaw;
 
     // FormData.get returns Blob | string | null in workers-types. Workers'
     // value-side `File` isn't exposed through the type defs, so narrow with

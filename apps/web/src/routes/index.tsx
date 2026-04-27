@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   Lock,
@@ -12,17 +12,19 @@ import {
   Database,
   Network,
   ShieldCheck,
-} from 'lucide-react'
-import { Button } from '#/components/ui/button'
-import { Separator } from '#/components/ui/separator'
+} from "lucide-react";
+import { Button } from "#/components/ui/button";
+import { Separator } from "#/components/ui/separator";
 
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute("/")({ component: Home });
 
-const EDITION_DATE = new Date().toLocaleDateString('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-}).toUpperCase()
+const EDITION_DATE = new Date()
+  .toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+  .toUpperCase();
 
 function Home() {
   return (
@@ -38,8 +40,8 @@ function Home() {
           className="pointer-events-none absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
           style={{
             backgroundImage:
-              'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)',
-            backgroundSize: '64px 64px',
+              "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
           }}
         />
         <div className="relative mx-auto grid max-w-6xl gap-8 px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-14 lg:grid-cols-12 lg:gap-10 lg:pb-24 lg:pt-20">
@@ -54,25 +56,22 @@ function Home() {
               <br />
               governance
               <br />
-              <span className="italic text-muted-foreground">for the</span>{' '}
+              <span className="italic text-muted-foreground">for the</span>{" "}
               <span className="relative inline-block">
                 pop-up city.
-                <span
-                  aria-hidden
-                  className="absolute -bottom-1 left-0 right-0 h-[3px] bg-foreground/90 sm:h-1"
-                />
+                <span aria-hidden className="absolute -bottom-1 left-0 right-0 h-[3px] bg-foreground/90 sm:h-1" />
               </span>
             </h1>
 
             <p className="mt-7 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-[17px]">
-              Residents of <span className="text-foreground">Ipê</span> propose
-              and decide together. Ballots are encrypted on-chain with{' '}
+              Residents of <span className="text-foreground">Ipê</span> propose and decide together. Ballots are
+              encrypted on-chain with{" "}
               <abbr
                 title="Fully Homomorphic Encryption"
                 className="cursor-help font-medium text-foreground decoration-foreground/30 underline-offset-4 [text-decoration-style:dotted]"
               >
                 FHE
-              </abbr>{' '}
+              </abbr>{" "}
               — only the aggregate tally is ever revealed.
             </p>
 
@@ -89,11 +88,7 @@ function Home() {
                 size="lg"
                 className="h-12 px-3 text-base text-muted-foreground hover:text-foreground"
               >
-                <a
-                  href="https://docs.ipe.city/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <a href="https://docs.ipe.city/" target="_blank" rel="noreferrer">
                   Read the docs ↗
                 </a>
               </Button>
@@ -107,23 +102,15 @@ function Home() {
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
                   The Ledger
                 </span>
-                <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
-                  N°·001
-                </span>
+                <span className="font-mono text-[10px] tracking-widest text-muted-foreground">N°·001</span>
               </div>
               <dl className="space-y-3.5 text-sm">
-                <LedgerRow
-                  k="Charter"
-                  v="Parallel Institutions"
-                />
+                <LedgerRow k="Charter" v="Parallel Institutions" />
                 <LedgerRow
                   k="Quorum"
                   v={
                     <span>
-                      Architects only{' '}
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        (Unlock key)
-                      </span>
+                      Architects only <span className="font-mono text-[10px] text-muted-foreground">(Unlock key)</span>
                     </span>
                   }
                 />
@@ -141,8 +128,7 @@ function Home() {
               </dl>
               <Separator className="my-5" />
               <p className="font-serif text-sm italic leading-snug text-muted-foreground">
-                “A village runs on what its members can keep to themselves —
-                and what they choose to count together.”
+                “A village runs on what its members can keep to themselves — and what they choose to count together.”
               </p>
               <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
                 — Charter, §1
@@ -155,10 +141,7 @@ function Home() {
       {/* Three pillars — the civic loop */}
       <section className="border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-          <SectionHeading
-            kicker="The civic loop"
-            title="Three movements, one quiet count."
-          />
+          <SectionHeading kicker="The civic loop" title="Three movements, one quiet count." />
           <div className="mt-10 grid gap-px bg-border sm:grid-cols-3">
             <Pillar
               n="§01"
@@ -191,13 +174,7 @@ function Home() {
           />
 
           <ol className="mt-10 grid gap-3 sm:gap-4 md:grid-cols-4">
-            <DiagramStep
-              n="01"
-              label="You choose"
-              detail="Yes / No / Abstain, locally."
-              kind="plain"
-              token="YES"
-            />
+            <DiagramStep n="01" label="You choose" detail="Yes / No / Abstain, locally." kind="plain" token="YES" />
             <DiagramStep
               n="02"
               label="We seal"
@@ -222,12 +199,9 @@ function Home() {
           </ol>
 
           <p className="mt-8 max-w-2xl font-serif text-base italic leading-relaxed text-muted-foreground sm:text-lg">
-            Your specific vote is{' '}
-            <span className="not-italic font-mono text-xs uppercase tracking-[0.18em] text-foreground">
-              never
-            </span>{' '}
-            decrypted on its own. Steps 02 and 03 are mathematically opaque, by
-            construction.
+            Your specific vote is{" "}
+            <span className="not-italic font-mono text-xs uppercase tracking-[0.18em] text-foreground">never</span>{" "}
+            decrypted on its own. Steps 02 and 03 are mathematically opaque, by construction.
           </p>
         </div>
       </section>
@@ -235,15 +209,10 @@ function Home() {
       {/* Protocol stack — specimen sheet */}
       <section className="border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-          <SectionHeading
-            kicker="Specimen sheet · what holds it up"
-            title="Nine protocols, working in concert."
-          />
+          <SectionHeading kicker="Specimen sheet · what holds it up" title="Nine protocols, working in concert." />
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
-            None of this is bespoke cryptography. Ipê stitches together
-            audited, public-good primitives — each one chosen for what it
-            refuses to leak, who it lets in, and how cheaply it lets people
-            participate.
+            None of this is bespoke cryptography. Ipê stitches together audited, public-good primitives — each one
+            chosen for what it refuses to leak, who it lets in, and how cheaply it lets people participate.
           </p>
 
           <ol className="mt-10 grid gap-px overflow-hidden rounded-md border border-border bg-border md:grid-cols-2">
@@ -323,21 +292,16 @@ function Home() {
 
           <div className="mt-6 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-x-8">
             <p>
-              <span className="font-mono uppercase tracking-[0.2em] text-foreground">
-                Note ·
-              </span>{' '}
-              Addresses & ABIs are centralized in{' '}
+              <span className="font-mono uppercase tracking-[0.2em] text-foreground">Note ·</span> Addresses & ABIs are
+              centralized in{" "}
               <code className="rounded-sm border border-dashed border-border bg-muted/50 px-1 py-0.5 font-mono text-[11px]">
                 @ipe-gov/sdk
-              </code>{' '}
+              </code>{" "}
               so app, workers, and contracts read from one source of truth.
             </p>
             <p>
-              <span className="font-mono uppercase tracking-[0.2em] text-foreground">
-                Off-chain ·
-              </span>{' '}
-              Cloudflare Workers proxy the FHE relayer, IPFS pinning, ENS
-              subname issuance, and a chain-aware paymaster RPC.
+              <span className="font-mono uppercase tracking-[0.2em] text-foreground">Off-chain ·</span> Cloudflare
+              Workers proxy the FHE relayer, IPFS pinning, ENS subname issuance, and a chain-aware paymaster RPC.
             </p>
           </div>
         </div>
@@ -376,7 +340,7 @@ function Home() {
         </div>
       </section>
     </main>
-  )
+  );
 }
 
 /* —————————————————————————————————————————————————— */
@@ -386,33 +350,23 @@ function Masthead() {
     <div className="border-b border-border bg-background">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:px-6 sm:text-[11px]">
         <span className="truncate">Ipê Village · Parallel Institutions</span>
-        <span className="hidden text-foreground/70 sm:inline">
-          {EDITION_DATE}
-        </span>
+        <span className="hidden text-foreground/70 sm:inline">{EDITION_DATE}</span>
         <span className="shrink-0">No. 001</span>
       </div>
     </div>
-  )
+  );
 }
 
 function LedgerRow({ k, v }: { k: string; v: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-        {k}
-      </dt>
+      <dt className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{k}</dt>
       <dd className="text-right text-sm text-foreground">{v}</dd>
     </div>
-  )
+  );
 }
 
-function SectionHeading({
-  kicker,
-  title,
-}: {
-  kicker: string
-  title: string
-}) {
+function SectionHeading({ kicker, title }: { kicker: string; title: string }) {
   return (
     <div className="grid gap-3 sm:grid-cols-12 sm:items-end">
       <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground sm:col-span-3">
@@ -422,38 +376,22 @@ function SectionHeading({
         {title}
       </h2>
     </div>
-  )
+  );
 }
 
-function Pillar({
-  n,
-  icon,
-  title,
-  body,
-}: {
-  n: string
-  icon: React.ReactNode
-  title: string
-  body: string
-}) {
+function Pillar({ n, icon, title, body }: { n: string; icon: React.ReactNode; title: string; body: string }) {
   return (
     <div className="group relative bg-background p-6 transition-colors hover:bg-muted/40 sm:p-7">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          {n}
-        </span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{n}</span>
         <span className="grid size-7 place-items-center rounded-full border border-border text-muted-foreground transition-colors group-hover:border-foreground group-hover:text-foreground">
           {icon}
         </span>
       </div>
-      <h3 className="mt-6 font-serif text-2xl tracking-tight text-foreground sm:text-3xl">
-        {title}
-      </h3>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
-        {body}
-      </p>
+      <h3 className="mt-6 font-serif text-2xl tracking-tight text-foreground sm:text-3xl">{title}</h3>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{body}</p>
     </div>
-  )
+  );
 }
 
 function DiagramStep({
@@ -463,46 +401,40 @@ function DiagramStep({
   kind,
   token,
 }: {
-  n: string
-  label: string
-  detail: string
-  kind: 'plain' | 'cipher'
-  token: string
+  n: string;
+  label: string;
+  detail: string;
+  kind: "plain" | "cipher";
+  token: string;
 }) {
   return (
     <li className="relative flex flex-col rounded-md border border-border bg-background p-4 sm:p-5">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-          STEP·{n}
-        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">STEP·{n}</span>
         <span
           className={
-            'rounded-sm px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] ' +
-            (kind === 'cipher'
-              ? 'bg-foreground text-background'
-              : 'border border-border text-muted-foreground')
+            "rounded-sm px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] " +
+            (kind === "cipher" ? "bg-foreground text-background" : "border border-border text-muted-foreground")
           }
         >
-          {kind === 'cipher' ? 'sealed' : 'plain'}
+          {kind === "cipher" ? "sealed" : "plain"}
         </span>
       </div>
-      <div className="mt-4 font-serif text-xl tracking-tight text-foreground sm:text-2xl">
-        {label}
-      </div>
+      <div className="mt-4 font-serif text-xl tracking-tight text-foreground sm:text-2xl">{label}</div>
       <div className="mt-1 text-sm text-muted-foreground">{detail}</div>
       <div
         className={
-          'mt-4 truncate rounded-sm px-2.5 py-2 font-mono text-[11px] tracking-wider ' +
-          (kind === 'cipher'
-            ? 'bg-foreground/95 text-background'
-            : 'border border-dashed border-border text-foreground')
+          "mt-4 truncate rounded-sm px-2.5 py-2 font-mono text-[11px] tracking-wider " +
+          (kind === "cipher"
+            ? "bg-foreground/95 text-background"
+            : "border border-dashed border-border text-foreground")
         }
         aria-hidden
       >
         {token}
       </div>
     </li>
-  )
+  );
 }
 
 function Spec({
@@ -513,20 +445,18 @@ function Spec({
   body,
   foot,
 }: {
-  n: string
-  icon: React.ReactNode
-  name: string
-  tag: string
-  body: string
-  foot: string
+  n: string;
+  icon: React.ReactNode;
+  name: string;
+  tag: string;
+  body: string;
+  foot: string;
 }) {
   return (
     <li className="group relative flex flex-col gap-3 bg-background p-5 transition-colors hover:bg-muted/40 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-            №·{n}
-          </span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">№·{n}</span>
           <span
             aria-hidden
             className="grid size-7 place-items-center rounded-full border border-border text-muted-foreground transition-colors group-hover:border-foreground group-hover:text-foreground"
@@ -538,17 +468,13 @@ function Spec({
           {tag}
         </span>
       </div>
-      <div className="font-serif text-2xl tracking-tight text-foreground sm:text-[1.75rem]">
-        {name}
-      </div>
-      <p className="text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
-        {body}
-      </p>
+      <div className="font-serif text-2xl tracking-tight text-foreground sm:text-[1.75rem]">{name}</div>
+      <p className="text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{body}</p>
       <div className="mt-1 border-t border-dashed border-border pt-3 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
         {foot}
       </div>
     </li>
-  )
+  );
 }
 
 function Door({
@@ -559,52 +485,46 @@ function Door({
   to,
   accent,
 }: {
-  role: string
-  tagline: string
-  body: string
-  cta: string
-  to: string
-  accent?: boolean
+  role: string;
+  tagline: string;
+  body: string;
+  cta: string;
+  to: string;
+  accent?: boolean;
 }) {
   return (
     <Link
       to={to}
       className={
-        'group relative flex flex-col justify-between overflow-hidden rounded-md border p-6 transition-all sm:p-8 ' +
+        "group relative flex flex-col justify-between overflow-hidden rounded-md border p-6 transition-all sm:p-8 " +
         (accent
-          ? 'border-foreground bg-foreground text-background hover:-translate-y-0.5'
-          : 'border-border bg-background hover:-translate-y-0.5 hover:border-foreground')
+          ? "border-foreground bg-foreground text-background hover:-translate-y-0.5"
+          : "border-border bg-background hover:-translate-y-0.5 hover:border-foreground")
       }
     >
       <div>
         <div
           className={
-            'font-mono text-[10px] uppercase tracking-[0.24em] ' +
-            (accent ? 'text-background/70' : 'text-muted-foreground')
+            "font-mono text-[10px] uppercase tracking-[0.24em] " +
+            (accent ? "text-background/70" : "text-muted-foreground")
           }
         >
           For the {role.toLowerCase()}
         </div>
         <h3
           className={
-            'mt-2 font-serif text-3xl leading-tight tracking-tight sm:text-4xl ' +
-            (accent ? '' : 'text-foreground')
+            "mt-2 font-serif text-3xl leading-tight tracking-tight sm:text-4xl " + (accent ? "" : "text-foreground")
           }
         >
           {role}
         </h3>
-        <p
-          className={
-            'mt-2 font-serif text-lg italic ' +
-            (accent ? 'text-background/80' : 'text-muted-foreground')
-          }
-        >
+        <p className={"mt-2 font-serif text-lg italic " + (accent ? "text-background/80" : "text-muted-foreground")}>
           {tagline}
         </p>
         <p
           className={
-            'mt-5 max-w-md text-sm leading-relaxed sm:text-[15px] ' +
-            (accent ? 'text-background/85' : 'text-muted-foreground')
+            "mt-5 max-w-md text-sm leading-relaxed sm:text-[15px] " +
+            (accent ? "text-background/85" : "text-muted-foreground")
           }
         >
           {body}
@@ -612,13 +532,13 @@ function Door({
       </div>
       <div
         className={
-          'mt-8 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] ' +
-          (accent ? 'text-background' : 'text-foreground')
+          "mt-8 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] " +
+          (accent ? "text-background" : "text-foreground")
         }
       >
         {cta}
         <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </div>
     </Link>
-  )
+  );
 }

@@ -185,9 +185,7 @@ describe("UnlockConfidentialGovernorLiquid", function () {
 
     const encDelegate = await encryptSupport(governorAddress, alice.address, 1);
     await (
-      await governor
-        .connect(alice)
-        .castVoteAsDelegate(1, encDelegate.handles[0], encDelegate.inputProof, [bob.address])
+      await governor.connect(alice).castVoteAsDelegate(1, encDelegate.handles[0], encDelegate.inputProof, [bob.address])
     ).wait();
 
     // Bob reclaims his vote — the event should name him as voter and alice
@@ -298,9 +296,10 @@ describe("UnlockConfidentialGovernorLiquid", function () {
     const [, , , , , outsider] = await ethers.getSigners();
     await (await governor.connect(alice).propose("p1")).wait();
     const enc = await encryptSupport(governorAddress, outsider.address, 1);
-    await expect(
-      governor.connect(outsider).castVote(1, enc.handles[0], enc.inputProof),
-    ).to.be.revertedWithCustomError(governor, "NotMember");
+    await expect(governor.connect(outsider).castVote(1, enc.handles[0], enc.inputProof)).to.be.revertedWithCustomError(
+      governor,
+      "NotMember",
+    );
   });
 
   it("rejects castVoteAsDelegate from a non-member", async function () {
@@ -317,9 +316,10 @@ describe("UnlockConfidentialGovernorLiquid", function () {
     const enc1 = await encryptSupport(governorAddress, alice.address, 1);
     await (await governor.connect(alice).castVote(1, enc1.handles[0], enc1.inputProof)).wait();
     const enc2 = await encryptSupport(governorAddress, alice.address, 0);
-    await expect(
-      governor.connect(alice).castVote(1, enc2.handles[0], enc2.inputProof),
-    ).to.be.revertedWithCustomError(governor, "AlreadyVoted");
+    await expect(governor.connect(alice).castVote(1, enc2.handles[0], enc2.inputProof)).to.be.revertedWithCustomError(
+      governor,
+      "AlreadyVoted",
+    );
   });
 
   it("reverts castVote, castVoteAsDelegate, and finalize on an unknown proposal", async function () {
@@ -327,9 +327,10 @@ describe("UnlockConfidentialGovernorLiquid", function () {
     // before touching FHE state — this pins all three of those checks in one
     // test rather than duplicating scaffolding.
     const enc = await encryptSupport(governorAddress, alice.address, 1);
-    await expect(
-      governor.connect(alice).castVote(42, enc.handles[0], enc.inputProof),
-    ).to.be.revertedWithCustomError(governor, "UnknownProposal");
+    await expect(governor.connect(alice).castVote(42, enc.handles[0], enc.inputProof)).to.be.revertedWithCustomError(
+      governor,
+      "UnknownProposal",
+    );
     await expect(
       governor.connect(alice).castVoteAsDelegate(42, enc.handles[0], enc.inputProof, []),
     ).to.be.revertedWithCustomError(governor, "UnknownProposal");
@@ -340,9 +341,10 @@ describe("UnlockConfidentialGovernorLiquid", function () {
     await (await governor.connect(alice).propose("p1")).wait();
     await mineBlocks(VOTING_PERIOD + 1);
     const enc = await encryptSupport(governorAddress, alice.address, 1);
-    await expect(
-      governor.connect(alice).castVote(1, enc.handles[0], enc.inputProof),
-    ).to.be.revertedWithCustomError(governor, "VotingClosed");
+    await expect(governor.connect(alice).castVote(1, enc.handles[0], enc.inputProof)).to.be.revertedWithCustomError(
+      governor,
+      "VotingClosed",
+    );
   });
 
   it("reverts castVoteAsDelegate after the voting window has closed", async function () {
@@ -410,9 +412,7 @@ describe("UnlockConfidentialGovernorLiquid", function () {
   it("reverts castVoteAsDelegate when delegators contains address(0)", async function () {
     await (await governor.connect(alice).propose("p1")).wait();
     const enc = await encryptSupport(governorAddress, alice.address, 1);
-    await expect(
-      governor.connect(alice).castVoteAsDelegate(1, enc.handles[0], enc.inputProof, [ethers.ZeroAddress]),
-    )
+    await expect(governor.connect(alice).castVoteAsDelegate(1, enc.handles[0], enc.inputProof, [ethers.ZeroAddress]))
       .to.be.revertedWithCustomError(governor, "InvalidDelegator")
       .withArgs(ethers.ZeroAddress);
   });

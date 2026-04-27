@@ -66,11 +66,7 @@ const AddressSchema = z.custom<Address>(
   "invalid address",
 );
 const HexSchema = z.custom<Hex>((v) => isHex(v), "invalid hex");
-const LabelSchema = z
-  .string()
-  .min(MIN_LABEL_LEN)
-  .max(MAX_LABEL_LEN)
-  .regex(LABEL_RE);
+const LabelSchema = z.string().min(MIN_LABEL_LEN).max(MAX_LABEL_LEN).regex(LABEL_RE);
 
 const ClaimRequestSchema = z.object({
   label: LabelSchema,
@@ -283,11 +279,7 @@ function buildOperatorWallet(env: Env) {
  * Pre-req: the operator's address must be listed in the proxy's
  * `OPERATOR_ALLOWLIST_1` secret so the policy check passes.
  */
-async function sponsoredMint(
-  env: Env,
-  publicClient: MainnetReadClient,
-  callData: Hex,
-): Promise<Hex> {
+async function sponsoredMint(env: Env, publicClient: MainnetReadClient, callData: Hex): Promise<Hex> {
   const wallet = buildOperatorWallet(env);
 
   const smartAccount = await to7702SimpleSmartAccount({
@@ -308,8 +300,7 @@ async function sponsoredMint(
     bundlerTransport: http(mainnetRpc),
     paymaster: pimlicoClient,
     userOperation: {
-      estimateFeesPerGas: async () =>
-        (await pimlicoClient.getUserOperationGasPrice()).fast,
+      estimateFeesPerGas: async () => (await pimlicoClient.getUserOperationGasPrice()).fast,
     },
   });
 
@@ -377,10 +368,7 @@ async function getClaimByAddress(env: Env, address: Address): Promise<ClaimRecor
 async function recordClaim(env: Env, claim: ClaimRecord) {
   const claims = await listClaims(env);
   const lower = claim.address.toLowerCase();
-  const next = [
-    ...claims.filter((c) => c.address.toLowerCase() !== lower),
-    claim,
-  ];
+  const next = [...claims.filter((c) => c.address.toLowerCase() !== lower), claim];
   await env.IDENTITIES.put(CLAIMS_KEY, JSON.stringify(next));
 }
 

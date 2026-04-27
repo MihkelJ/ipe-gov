@@ -123,7 +123,7 @@ function readExistingAddresses(): Record<string, NetworkAddresses> {
     const text = readFileSync(SDK_ADDRESSES_FILE, "utf8");
     const match = text.match(/export const addresses = (\{[\s\S]*?\}) as const;/);
     if (!match) return {};
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
+
     const fn = new Function(`"use strict"; return (${match[1]});`);
     const parsed = fn();
     if (parsed && typeof parsed === "object") return parsed as Record<string, NetworkAddresses>;

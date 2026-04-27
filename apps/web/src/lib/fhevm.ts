@@ -26,9 +26,8 @@ export async function getFhevmInstance(): Promise<FhevmInstance> {
       // `network` is required and accepts either an EIP-1193 provider or an
       // RPC URL. Prefer the injected wallet provider; fall back to a public
       // Sepolia endpoint for read-only flows.
-      const injected = (
-        window as unknown as { ethereum?: Parameters<typeof sdk.createInstance>[0]["network"] }
-      ).ethereum;
+      const injected = (window as unknown as { ethereum?: Parameters<typeof sdk.createInstance>[0]["network"] })
+        .ethereum;
       return sdk.createInstance({
         ...sdk.SepoliaConfig,
         network: injected ?? "https://rpc.sepolia.org",

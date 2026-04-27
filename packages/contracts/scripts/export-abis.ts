@@ -158,12 +158,10 @@ function readExistingAddresses(): Record<string, Record<string, string>> {
     const text = readFileSync(sdkAddressesFile, "utf8");
     const match = text.match(/export const addresses = (\{[\s\S]*?\}) as const;/);
     if (!match) return {};
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
+
     const fn = new Function(`"use strict"; return (${match[1]});`);
     const parsed = fn();
-    return parsed && typeof parsed === "object"
-      ? (parsed as Record<string, Record<string, string>>)
-      : {};
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, Record<string, string>>) : {};
   } catch {
     return {};
   }

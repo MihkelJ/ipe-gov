@@ -1,7 +1,4 @@
-import {
-  SIGNED_MESSAGE_MAX_AGE_MS,
-  parseSignedTimestamp,
-} from "@ipe-gov/sdk";
+import { SIGNED_MESSAGE_MAX_AGE_MS, parseSignedTimestamp } from "@ipe-gov/sdk";
 import { type Address, type Hex, verifyMessage } from "viem";
 import { HttpError } from "./error";
 

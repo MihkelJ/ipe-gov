@@ -15,16 +15,7 @@ export class HttpError extends Error {
 
 /** The set of statuses we ever throw — narrows the response type so Hono's
  *  `c.json` overload accepts it cleanly. */
-export type HttpStatus =
-  | 400
-  | 401
-  | 403
-  | 404
-  | 409
-  | 413
-  | 415
-  | 500
-  | 502;
+export type HttpStatus = 400 | 401 | 403 | 404 | 409 | 413 | 415 | 500 | 502;
 
 /** Maps any thrown value to a JSON error response. `HttpError` keeps its
  *  status; anything else becomes a 500 with the `Error.message`. Wrap each

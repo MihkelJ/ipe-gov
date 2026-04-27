@@ -60,5 +60,4 @@ export function getChainConfig(chainId: number): ChainConfig | undefined {
   return CHAIN_CONFIGS[chainId];
 }
 
-export const SUPPORTED_CHAIN_IDS: readonly number[] =
-  Object.keys(CHAIN_CONFIGS).map(Number);
+export const SUPPORTED_CHAIN_IDS: readonly number[] = Object.keys(CHAIN_CONFIGS).map(Number);

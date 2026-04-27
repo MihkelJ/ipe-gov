@@ -65,10 +65,7 @@ export async function pinFile(params: {
   const form = new FormData();
   form.append("file", params.file, params.fileName);
   if (params.pinName) {
-    form.append(
-      "pinataMetadata",
-      JSON.stringify({ name: params.pinName }),
-    );
+    form.append("pinataMetadata", JSON.stringify({ name: params.pinName }));
   }
 
   const response = await fetch(PINATA_PIN_FILE_URL, {
