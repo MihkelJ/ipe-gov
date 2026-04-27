@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Check,
   Copy,
@@ -10,52 +10,47 @@ import {
   Twitter,
   Upload,
   UserCircle2,
-} from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { useAccount } from 'wagmi'
-import { ENS_PARENT_NAME } from '@ipe-gov/sdk'
-import RequireUnlockMembership from '#/components/RequireUnlockMembership'
-import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-import { Card, CardContent } from '#/components/ui/card'
-import { Input } from '#/components/ui/input'
-import { Label } from '#/components/ui/label'
-import { Separator } from '#/components/ui/separator'
-import { cn } from '#/lib/utils'
-import { useAvatarUpload } from '#/hooks/useAvatarUpload'
-import { useEnsTextRecords } from '#/hooks/useEnsTextRecords'
-import {
-  useSubnameAvailability,
-  normalizeLabelInput,
-} from '#/hooks/useSubnameAvailability'
-import { useSubnameClaim } from '#/hooks/useSubnameClaim'
-import { useSubnameIdentity } from '#/hooks/useSubnameIdentity'
-import { useSubnameSetTextRecords } from '#/hooks/useSubnameRecords'
-import { truncateAddress } from '#/lib/address'
-import type { SubnameIdentity } from '#/lib/ensApi'
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useAccount } from "wagmi";
+import { ENS_PARENT_NAME } from "@ipe-gov/sdk";
+import RequireUnlockMembership from "#/components/RequireUnlockMembership";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
+import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
+import { Card, CardContent } from "#/components/ui/card";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import { Separator } from "#/components/ui/separator";
+import { cn } from "#/lib/utils";
+import { useAvatarUpload } from "#/hooks/useAvatarUpload";
+import { useEnsTextRecords } from "#/hooks/useEnsTextRecords";
+import { useSubnameAvailability, normalizeLabelInput } from "#/hooks/useSubnameAvailability";
+import { useSubnameClaim } from "#/hooks/useSubnameClaim";
+import { useSubnameIdentity } from "#/hooks/useSubnameIdentity";
+import { useSubnameSetTextRecords } from "#/hooks/useSubnameRecords";
+import { truncateAddress } from "#/lib/address";
+import type { SubnameIdentity } from "#/lib/ensApi";
 
-export const Route = createFileRoute('/profile')({
-  head: () => ({ meta: [{ title: 'Your name — ipe-gov' }] }),
+export const Route = createFileRoute("/profile")({
+  head: () => ({ meta: [{ title: "Your name — ipe-gov" }] }),
   component: ProfileGuarded,
-})
+});
 
 function ProfileGuarded() {
   return (
     <RequireUnlockMembership>
       <ProfilePage />
     </RequireUnlockMembership>
-  )
+  );
 }
 
-const EYEBROW =
-  'font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground'
-const SECTION_HEADING =
-  'font-mono text-[11px] uppercase tracking-[0.2em] text-foreground'
+const EYEBROW = "font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground";
+const SECTION_HEADING = "font-mono text-[11px] uppercase tracking-[0.2em] text-foreground";
 
 function ProfilePage() {
-  const { address } = useAccount()
-  const { data: identity, isLoading } = useSubnameIdentity(address)
+  const { address } = useAccount();
+  const { data: identity, isLoading } = useSubnameIdentity(address);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-32 pt-10 sm:px-6 md:pt-16">
@@ -63,7 +58,7 @@ function ProfilePage() {
 
       <section className="mt-10 md:mt-14">
         {isLoading ? (
-          <div className={cn(EYEBROW, 'animate-pulse')}>Loading dossier…</div>
+          <div className={cn(EYEBROW, "animate-pulse")}>Loading dossier…</div>
         ) : identity ? (
           <ClaimedView address={address} identity={identity} />
         ) : (
@@ -71,18 +66,12 @@ function ProfilePage() {
         )}
       </section>
     </main>
-  )
+  );
 }
 
 /* ─────────────────────────  Header  ───────────────────────── */
 
-function PageHeader({
-  address,
-  identity,
-}: {
-  address: string | undefined
-  identity: SubnameIdentity | null
-}) {
+function PageHeader({ address, identity }: { address: string | undefined; identity: SubnameIdentity | null }) {
   return (
     <header className="border-b pb-8 md:pb-10">
       <div className={EYEBROW}>§ Identity / Member dossier</div>
@@ -95,54 +84,47 @@ function PageHeader({
           never crams into a 2-col grid that truncates everything. */}
       <dl
         className={cn(
-          'mt-7 flex gap-x-6 gap-y-3 overflow-x-auto pb-1 font-mono text-xs',
-          'md:grid md:grid-cols-4 md:gap-x-8 md:overflow-visible',
+          "mt-7 flex gap-x-6 gap-y-3 overflow-x-auto pb-1 font-mono text-xs",
+          "md:grid md:grid-cols-4 md:gap-x-8 md:overflow-visible",
         )}
       >
         {(
           [
-            ['Issuer', ENS_PARENT_NAME],
-            ['Registry', 'ENS NameWrapper'],
-            ['Status', identity ? 'Claimed' : 'Unclaimed'],
-            ['Holder', address ? truncateAddress(address as `0x${string}`) : '—'],
+            ["Issuer", ENS_PARENT_NAME],
+            ["Registry", "ENS NameWrapper"],
+            ["Status", identity ? "Claimed" : "Unclaimed"],
+            ["Holder", address ? truncateAddress(address as `0x${string}`) : "—"],
           ] as Array<[string, string]>
         ).map(([k, v]) => (
-          <div
-            key={k}
-            className="flex min-w-[8.5rem] shrink-0 flex-col gap-1 border-t pt-2 md:min-w-0"
-          >
-            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              {k}
-            </dt>
+          <div key={k} className="flex min-w-[8.5rem] shrink-0 flex-col gap-1 border-t pt-2 md:min-w-0">
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{k}</dt>
             <dd className="truncate">{v}</dd>
           </div>
         ))}
       </dl>
     </header>
-  )
+  );
 }
 
 /* ─────────────────────────  Unclaimed  ───────────────────────── */
 
 function UnclaimedView() {
-  const [label, setLabel] = useState('')
-  const availability = useSubnameAvailability(label)
-  const { mutateAsync: claim, isPending, error } = useSubnameClaim()
-  const [done, setDone] = useState<string | null>(null)
+  const [label, setLabel] = useState("");
+  const availability = useSubnameAvailability(label);
+  const { mutateAsync: claim, isPending, error } = useSubnameClaim();
+  const [done, setDone] = useState<string | null>(null);
 
-  const normalized = normalizeLabelInput(label)
-  const canSubmit =
-    availability.status === 'available' && !isPending && !!normalized
-  const isInvalid =
-    availability.status === 'invalid' || availability.status === 'taken'
-  const isAvailable = availability.status === 'available'
+  const normalized = normalizeLabelInput(label);
+  const canSubmit = availability.status === "available" && !isPending && !!normalized;
+  const isInvalid = availability.status === "invalid" || availability.status === "taken";
+  const isAvailable = availability.status === "available";
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!normalized) return
-    setDone(null)
-    const result = await claim({ label: normalized })
-    setDone(result.fullName)
+    e.preventDefault();
+    if (!normalized) return;
+    setDone(null);
+    const result = await claim({ label: normalized });
+    setDone(result.fullName);
   }
 
   return (
@@ -156,19 +138,19 @@ function UnclaimedView() {
             scroll horizontally. Desktop: inline, with the suffix muted. */}
         <div
           className={cn(
-            'mt-5 font-mono leading-tight tracking-tight',
-            'flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:gap-0 sm:whitespace-nowrap',
-            'text-[clamp(1.65rem,7vw,3rem)] font-medium',
+            "mt-5 font-mono leading-tight tracking-tight",
+            "flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:gap-0 sm:whitespace-nowrap",
+            "text-[clamp(1.65rem,7vw,3rem)] font-medium",
           )}
         >
           <span
             className={cn(
-              'inline-flex w-full max-w-full border-b-2 pb-1 transition-colors sm:w-auto',
+              "inline-flex w-full max-w-full border-b-2 pb-1 transition-colors sm:w-auto",
               isInvalid
-                ? 'border-destructive'
+                ? "border-destructive"
                 : isAvailable
-                  ? 'border-emerald-700/70 dark:border-emerald-500/70'
-                  : 'border-foreground/30 focus-within:border-foreground',
+                  ? "border-emerald-700/70 dark:border-emerald-500/70"
+                  : "border-foreground/30 focus-within:border-foreground",
             )}
           >
             <input
@@ -182,9 +164,9 @@ function UnclaimedView() {
               onChange={(e) => setLabel(e.target.value)}
               aria-invalid={isInvalid}
               className={cn(
-                'min-w-0 w-full bg-transparent p-0 outline-none caret-foreground',
-                'placeholder:text-muted-foreground/40',
-                isInvalid && 'text-destructive',
+                "min-w-0 w-full bg-transparent p-0 outline-none caret-foreground",
+                "placeholder:text-muted-foreground/40",
+                isInvalid && "text-destructive",
               )}
             />
           </span>
@@ -199,15 +181,10 @@ function UnclaimedView() {
       <Card className="border-dashed bg-muted/20 py-5 shadow-none">
         <CardContent className="flex flex-col gap-4 px-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <Sparkles
-              aria-hidden
-              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            />
+            <Sparkles aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div className="space-y-0.5">
               <div className="text-sm font-medium">Sponsored claim</div>
-              <p className="text-xs text-muted-foreground">
-                One signature. No gas. No chain switch.
-              </p>
+              <p className="text-xs text-muted-foreground">One signature. No gas. No chain switch.</p>
             </div>
           </div>
           <Button type="submit" size="lg" disabled={!canSubmit} className="sm:shrink-0">
@@ -223,116 +200,93 @@ function UnclaimedView() {
       </Card>
 
       {done ? (
-        <p className="font-mono text-xs text-emerald-700 dark:text-emerald-400">
-          ✓&nbsp;&nbsp;{done} issued.
-        </p>
+        <p className="font-mono text-xs text-emerald-700 dark:text-emerald-400">✓&nbsp;&nbsp;{done} issued.</p>
       ) : null}
-      {error ? (
-        <p className="font-mono text-xs text-destructive">
-          ✕&nbsp;&nbsp;{(error as Error).message}
-        </p>
-      ) : null}
+      {error ? <p className="font-mono text-xs text-destructive">✕&nbsp;&nbsp;{(error as Error).message}</p> : null}
     </form>
-  )
+  );
 }
 
 /* ─────────────────────────  Claimed  ───────────────────────── */
 
 const TEXT_RECORD_FIELDS: Array<{
-  key: string
-  label: string
-  placeholder: string
-  description?: string
-  icon: React.ComponentType<{ className?: string }>
+  key: string;
+  label: string;
+  placeholder: string;
+  description?: string;
+  icon: React.ComponentType<{ className?: string }>;
 }> = [
   {
-    key: 'avatar',
-    label: 'Avatar',
-    placeholder: 'https://… or ipfs://… or eip155:…',
-    description: 'HTTPS, IPFS, or ENS NFT avatar URI.',
+    key: "avatar",
+    label: "Avatar",
+    placeholder: "https://… or ipfs://… or eip155:…",
+    description: "HTTPS, IPFS, or ENS NFT avatar URI.",
     icon: ImagePlus,
   },
   {
-    key: 'description',
-    label: 'Bio',
-    placeholder: 'A short line about you',
+    key: "description",
+    label: "Bio",
+    placeholder: "A short line about you",
     icon: UserCircle2,
   },
-  { key: 'com.github', label: 'GitHub', placeholder: 'alice', icon: Github },
-  { key: 'com.twitter', label: 'X / Twitter', placeholder: 'alice', icon: Twitter },
-]
+  { key: "com.github", label: "GitHub", placeholder: "alice", icon: Github },
+  { key: "com.twitter", label: "X / Twitter", placeholder: "alice", icon: Twitter },
+];
 
-const TEXT_RECORD_KEYS = TEXT_RECORD_FIELDS.map((f) => f.key) as readonly string[]
+const TEXT_RECORD_KEYS = TEXT_RECORD_FIELDS.map((f) => f.key) as readonly string[];
 
-function ClaimedView({
-  address,
-  identity,
-}: {
-  address: string | undefined
-  identity: SubnameIdentity
-}) {
-  const { data: existingRecords } = useEnsTextRecords(
-    identity.fullName,
-    TEXT_RECORD_KEYS,
-  )
+function ClaimedView({ address, identity }: { address: string | undefined; identity: SubnameIdentity }) {
+  const { data: existingRecords } = useEnsTextRecords(identity.fullName, TEXT_RECORD_KEYS);
 
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(TEXT_RECORD_FIELDS.map((f) => [f.key, ''])),
-  )
-  const [dirty, setDirty] = useState<Set<string>>(new Set())
-  const [savedCount, setSavedCount] = useState<number | null>(null)
+    Object.fromEntries(TEXT_RECORD_FIELDS.map((f) => [f.key, ""])),
+  );
+  const [dirty, setDirty] = useState<Set<string>>(new Set());
+  const [savedCount, setSavedCount] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!existingRecords) return
+    if (!existingRecords) return;
     setValues((current) => {
-      const next = { ...current }
+      const next = { ...current };
       for (const f of TEXT_RECORD_FIELDS) {
         if (!dirty.has(f.key)) {
-          next[f.key] = existingRecords[f.key] ?? ''
+          next[f.key] = existingRecords[f.key] ?? "";
         }
       }
-      return next
-    })
-  }, [existingRecords, dirty])
+      return next;
+    });
+  }, [existingRecords, dirty]);
 
-  const {
-    mutateAsync: setRecords,
-    isPending,
-    error,
-  } = useSubnameSetTextRecords({ node: identity.node })
+  const { mutateAsync: setRecords, isPending, error } = useSubnameSetTextRecords({ node: identity.node });
 
   function updateField(key: string, value: string) {
-    setValues((v) => ({ ...v, [key]: value }))
-    setDirty((d) => new Set(d).add(key))
+    setValues((v) => ({ ...v, [key]: value }));
+    setDirty((d) => new Set(d).add(key));
   }
 
-  const {
-    mutateAsync: uploadAvatar,
-    isPending: isUploading,
-    error: uploadError,
-  } = useAvatarUpload()
+  const { mutateAsync: uploadAvatar, isPending: isUploading, error: uploadError } = useAvatarUpload();
 
   async function handleAvatarFile(file: File) {
-    const result = await uploadAvatar(file)
-    updateField('avatar', result.uri)
+    const result = await uploadAvatar(file);
+    updateField("avatar", result.uri);
   }
 
   async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    if (dirty.size === 0) return
-    const updates = [...dirty].map((key) => ({ key, value: values[key] ?? '' }))
-    setSavedCount(null)
-    await setRecords(updates)
-    setSavedCount(updates.length)
-    setDirty(new Set())
+    e.preventDefault();
+    if (dirty.size === 0) return;
+    const updates = [...dirty].map((key) => ({ key, value: values[key] ?? "" }));
+    setSavedCount(null);
+    await setRecords(updates);
+    setSavedCount(updates.length);
+    setDirty(new Set());
   }
 
   const filledCount = useMemo(
-    () => TEXT_RECORD_FIELDS.filter((f) => (values[f.key] ?? '').trim().length > 0).length,
+    () => TEXT_RECORD_FIELDS.filter((f) => (values[f.key] ?? "").trim().length > 0).length,
     [values],
-  )
-  const completion = Math.round((filledCount / TEXT_RECORD_FIELDS.length) * 100)
-  const avatarPreview = avatarPreviewSrc(values.avatar ?? '')
+  );
+  const completion = Math.round((filledCount / TEXT_RECORD_FIELDS.length) * 100);
+  const avatarPreview = avatarPreviewSrc(values.avatar ?? "");
 
   return (
     <div className="space-y-10 md:space-y-14">
@@ -341,11 +295,7 @@ function ClaimedView({
         <CardContent className="grid grid-cols-1 gap-6 p-6 sm:p-8 md:grid-cols-[auto_1fr_auto] md:items-center md:gap-8">
           <Avatar className="size-20 rounded-2xl sm:size-24">
             {avatarPreview ? (
-              <AvatarImage
-                src={avatarPreview}
-                alt={identity.fullName}
-                className="rounded-2xl object-cover"
-              />
+              <AvatarImage src={avatarPreview} alt={identity.fullName} className="rounded-2xl object-cover" />
             ) : null}
             <AvatarFallback className="rounded-2xl font-mono text-base uppercase tracking-wider">
               {identity.label.slice(0, 2).toUpperCase()}
@@ -378,11 +328,7 @@ function ClaimedView({
             <CopyButton value={identity.fullName} label="Copy name" />
             {address ? (
               <Button asChild variant="outline" size="sm">
-                <Link
-                  to="/members/$address"
-                  params={{ address }}
-                  className="gap-1.5"
-                >
+                <Link to="/members/$address" params={{ address }} className="gap-1.5">
                   <ExternalLink className="size-3.5" />
                   Public dossier
                 </Link>
@@ -412,9 +358,9 @@ function ClaimedView({
         <Card className="overflow-hidden py-0 shadow-none">
           <ol className="divide-y">
             {TEXT_RECORD_FIELDS.map((f, i) => {
-              const Icon = f.icon
-              const value = values[f.key] ?? ''
-              const isDirty = dirty.has(f.key)
+              const Icon = f.icon;
+              const value = values[f.key] ?? "";
+              const isDirty = dirty.has(f.key);
               return (
                 <li
                   key={f.key}
@@ -426,14 +372,10 @@ function ClaimedView({
                     </span>
                     <div className="min-w-0">
                       <div className="font-mono text-[11px] uppercase tracking-[0.22em]">
-                        <span className="text-muted-foreground">
-                          {String(i + 1).padStart(2, '0')} —{' '}
-                        </span>
+                        <span className="text-muted-foreground">{String(i + 1).padStart(2, "0")} — </span>
                         <span>{f.label}</span>
                       </div>
-                      <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground/70">
-                        {f.key}
-                      </div>
+                      <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground/70">{f.key}</div>
                     </div>
                     {isDirty ? (
                       <Badge
@@ -446,10 +388,10 @@ function ClaimedView({
                   </div>
 
                   <div className="space-y-1.5">
-                    {f.key === 'avatar' ? (
+                    {f.key === "avatar" ? (
                       <AvatarField
                         value={value}
-                        onChange={(v) => updateField('avatar', v)}
+                        onChange={(v) => updateField("avatar", v)}
                         onUpload={handleAvatarFile}
                         isUploading={isUploading}
                         uploadError={uploadError as Error | null}
@@ -463,23 +405,19 @@ function ClaimedView({
                       />
                     )}
                     {f.description ? (
-                      <p className="font-mono text-[10px] text-muted-foreground">
-                        {f.description}
-                      </p>
+                      <p className="font-mono text-[10px] text-muted-foreground">{f.description}</p>
                     ) : null}
                   </div>
                 </li>
-              )
+              );
             })}
           </ol>
         </Card>
 
         {/* Inline (desktop) action row */}
         <div className="hidden items-center justify-between sm:flex">
-          <div className={cn(EYEBROW, 'max-w-xs')}>
-            {dirty.size > 0
-              ? `${dirty.size} pending change${dirty.size === 1 ? '' : 's'}`
-              : 'All changes saved'}
+          <div className={cn(EYEBROW, "max-w-xs")}>
+            {dirty.size > 0 ? `${dirty.size} pending change${dirty.size === 1 ? "" : "s"}` : "All changes saved"}
           </div>
           <Button type="submit" disabled={isPending || dirty.size === 0}>
             {isPending ? (
@@ -487,21 +425,17 @@ function ClaimedView({
                 <Loader2 className="size-4 animate-spin" /> Saving…
               </>
             ) : (
-              <>Save {dirty.size || ''} →</>
+              <>Save {dirty.size || ""} →</>
             )}
           </Button>
         </div>
 
         {savedCount !== null ? (
           <p className="font-mono text-xs text-emerald-700 dark:text-emerald-400">
-            ✓&nbsp;&nbsp;Saved {savedCount} record{savedCount === 1 ? '' : 's'}.
+            ✓&nbsp;&nbsp;Saved {savedCount} record{savedCount === 1 ? "" : "s"}.
           </p>
         ) : null}
-        {error ? (
-          <p className="font-mono text-xs text-destructive">
-            ✕&nbsp;&nbsp;{(error as Error).message}
-          </p>
-        ) : null}
+        {error ? <p className="font-mono text-xs text-destructive">✕&nbsp;&nbsp;{(error as Error).message}</p> : null}
 
         {/* Sticky save bar (mobile only): keeps the action reachable while
             scrolling through records. Desktop uses the inline row above. */}
@@ -511,12 +445,7 @@ function ClaimedView({
               <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                 {dirty.size} pending
               </div>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isPending}
-                className="min-w-[7rem]"
-              >
+              <Button type="submit" size="sm" disabled={isPending} className="min-w-[7rem]">
                 {isPending ? (
                   <>
                     <Loader2 className="size-4 animate-spin" /> Saving…
@@ -530,7 +459,7 @@ function ClaimedView({
         ) : null}
       </form>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────  Helpers  ───────────────────────── */
@@ -541,10 +470,10 @@ function CompletionMeter({
   percent,
   dirty,
 }: {
-  filled: number
-  total: number
-  percent: number
-  dirty: number
+  filled: number;
+  total: number;
+  percent: number;
+  dirty: number;
 }) {
   return (
     <div className="w-full max-w-xs">
@@ -552,7 +481,7 @@ function CompletionMeter({
         <span>
           {filled} / {total} filled
         </span>
-        <span>{dirty > 0 ? `${dirty} pending` : 'Saved'}</span>
+        <span>{dirty > 0 ? `${dirty} pending` : "Saved"}</span>
       </div>
       <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-muted">
         <div
@@ -561,29 +490,22 @@ function CompletionMeter({
         />
       </div>
     </div>
-  )
+  );
 }
 
 function CopyButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
   async function handle() {
     try {
-      await navigator.clipboard.writeText(value)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     } catch {
       /* ignore */
     }
   }
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={handle}
-      className="gap-1.5"
-      aria-label={label}
-    >
+    <Button type="button" variant="outline" size="sm" onClick={handle} className="gap-1.5" aria-label={label}>
       {copied ? (
         <>
           <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -596,16 +518,16 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         </>
       )}
     </Button>
-  )
+  );
 }
 
 function avatarPreviewSrc(value: string): string | null {
-  if (!value) return null
-  if (value.startsWith('ipfs://')) {
-    return `https://gateway.pinata.cloud/ipfs/${value.slice('ipfs://'.length)}`
+  if (!value) return null;
+  if (value.startsWith("ipfs://")) {
+    return `https://gateway.pinata.cloud/ipfs/${value.slice("ipfs://".length)}`;
   }
-  if (value.startsWith('https://') || value.startsWith('http://')) return value
-  return null
+  if (value.startsWith("https://") || value.startsWith("http://")) return value;
+  return null;
 }
 
 function AvatarField({
@@ -615,22 +537,22 @@ function AvatarField({
   isUploading,
   uploadError,
 }: {
-  value: string
-  onChange: (v: string) => void
-  onUpload: (file: File) => Promise<void> | void
-  isUploading: boolean
-  uploadError: Error | null
+  value: string;
+  onChange: (v: string) => void;
+  onUpload: (file: File) => Promise<void> | void;
+  isUploading: boolean;
+  uploadError: Error | null;
 }) {
-  const previewSrc = avatarPreviewSrc(value)
+  const previewSrc = avatarPreviewSrc(value);
 
   return (
     <div className="space-y-3">
       <div className="flex items-start gap-4">
         <label
           className={cn(
-            'group relative flex size-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed bg-muted/30 transition-colors',
-            'hover:border-foreground/40 hover:bg-muted/50',
-            isUploading && 'pointer-events-none opacity-60',
+            "group relative flex size-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed bg-muted/30 transition-colors",
+            "hover:border-foreground/40 hover:bg-muted/50",
+            isUploading && "pointer-events-none opacity-60",
           )}
           aria-label="Upload avatar image"
         >
@@ -641,7 +563,7 @@ function AvatarField({
                 alt=""
                 className="h-full w-full object-cover"
                 onError={(e) => {
-                  ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
                 }}
               />
               <div className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 transition-opacity group-hover:opacity-100">
@@ -651,9 +573,7 @@ function AvatarField({
           ) : (
             <div className="flex flex-col items-center gap-1 text-muted-foreground transition-colors group-hover:text-foreground">
               <ImagePlus aria-hidden className="size-5" />
-              <span className="font-mono text-[9px] uppercase tracking-[0.18em]">
-                Upload
-              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.18em]">Upload</span>
             </div>
           )}
           <input
@@ -662,9 +582,9 @@ function AvatarField({
             className="absolute inset-0 cursor-pointer opacity-0"
             disabled={isUploading}
             onChange={(e) => {
-              const f = e.target.files?.[0]
-              e.target.value = ''
-              if (f) onUpload(f)
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) onUpload(f);
             }}
           />
         </label>
@@ -681,55 +601,36 @@ function AvatarField({
             </p>
           ) : null}
           {uploadError ? (
-            <p className="font-mono text-[10px] text-destructive">
-              ✕&nbsp;&nbsp;{uploadError.message}
-            </p>
+            <p className="font-mono text-[10px] text-destructive">✕&nbsp;&nbsp;{uploadError.message}</p>
           ) : null}
         </div>
       </div>
       <Separator className="opacity-40" />
     </div>
-  )
+  );
 }
 
-function AvailabilityHint({
-  state,
-}: {
-  state: ReturnType<typeof useSubnameAvailability>
-}) {
-  if (state.status === 'idle')
-    return (
-      <span className="text-muted-foreground/70">
-        ▸&nbsp;&nbsp;Type to check availability.
-      </span>
-    )
-  if (state.status === 'invalid')
-    return (
-      <span className="text-destructive">
-        ✕&nbsp;&nbsp;{state.reason}.
-      </span>
-    )
-  if (state.status === 'loading')
+function AvailabilityHint({ state }: { state: ReturnType<typeof useSubnameAvailability> }) {
+  if (state.status === "idle")
+    return <span className="text-muted-foreground/70">▸&nbsp;&nbsp;Type to check availability.</span>;
+  if (state.status === "invalid") return <span className="text-destructive">✕&nbsp;&nbsp;{state.reason}.</span>;
+  if (state.status === "loading")
     return (
       <span className="text-muted-foreground">
         ◔&nbsp;&nbsp;Checking {state.label}.{ENS_PARENT_NAME}…
       </span>
-    )
-  if (state.status === 'available')
+    );
+  if (state.status === "available")
     return (
       <span className="text-emerald-700 dark:text-emerald-400">
         ✓&nbsp;&nbsp;{state.label}.{ENS_PARENT_NAME} is available.
       </span>
-    )
-  if (state.status === 'taken')
+    );
+  if (state.status === "taken")
     return (
       <span className="text-destructive">
         ✕&nbsp;&nbsp;{state.label}.{ENS_PARENT_NAME} is already taken.
       </span>
-    )
-  return (
-    <span className="text-destructive">
-      ✕&nbsp;&nbsp;Couldn&apos;t check availability: {state.error}
-    </span>
-  )
+    );
+  return <span className="text-destructive">✕&nbsp;&nbsp;Couldn&apos;t check availability: {state.error}</span>;
 }

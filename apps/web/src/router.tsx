@@ -1,6 +1,6 @@
-import { createRouter as createTanStackRouter, Link } from '@tanstack/react-router'
-import type { QueryClient } from '@tanstack/react-query'
-import { routeTree } from './routeTree.gen'
+import { createRouter as createTanStackRouter, Link } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
+import { routeTree } from "./routeTree.gen";
 
 function DefaultNotFound() {
   return (
@@ -12,7 +12,7 @@ function DefaultNotFound() {
         </Link>
       </p>
     </main>
-  )
+  );
 }
 
 function DefaultError({ error }: { error: Error }) {
@@ -21,7 +21,7 @@ function DefaultError({ error }: { error: Error }) {
       <h1 className="text-3xl font-bold">Something went wrong</h1>
       <p className="mt-3 text-sm text-muted-foreground">{error.message}</p>
     </main>
-  )
+  );
 }
 
 export function getRouter(queryClient: QueryClient) {
@@ -29,15 +29,15 @@ export function getRouter(queryClient: QueryClient) {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    defaultPreload: 'intent',
+    defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
     defaultNotFoundComponent: DefaultNotFound,
     defaultErrorComponent: DefaultError,
-  })
+  });
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof getRouter>
+    router: ReturnType<typeof getRouter>;
   }
 }

@@ -42,15 +42,9 @@ export default tseslint.config(
       },
     },
     rules: {
-      "@typescript-eslint/no-floating-promises": [
-        "error",
-        { ignoreIIFE: true, ignoreVoid: true },
-      ],
+      "@typescript-eslint/no-floating-promises": ["error", { ignoreIIFE: true, ignoreVoid: true }],
       "@typescript-eslint/no-inferrable-types": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "_", varsIgnorePattern: "_" },
-      ],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_", varsIgnorePattern: "_" }],
     },
-  }
+  },
 );

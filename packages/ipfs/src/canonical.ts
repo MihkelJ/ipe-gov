@@ -11,21 +11,11 @@ export function canonicalJson(v: unknown): string {
   if (v === undefined) return "null";
   if (v === null || typeof v !== "object") return JSON.stringify(v);
   if (Array.isArray(v)) {
-    return (
-      "[" +
-      v.map((e) => (e === undefined ? "null" : canonicalJson(e))).join(",") +
-      "]"
-    );
+    return "[" + v.map((e) => (e === undefined ? "null" : canonicalJson(e))).join(",") + "]";
   }
   const obj = v as Record<string, unknown>;
   const keys = Object.keys(obj)
     .filter((k) => obj[k] !== undefined)
     .sort();
-  return (
-    "{" +
-    keys
-      .map((k) => JSON.stringify(k) + ":" + canonicalJson(obj[k]))
-      .join(",") +
-    "}"
-  );
+  return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonicalJson(obj[k])).join(",") + "}";
 }

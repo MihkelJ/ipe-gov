@@ -26,10 +26,7 @@ export function useBlockCountdown(endBlock: bigint | undefined): number | null {
       ? Number(endBlock - currentBlock) * SEPOLIA_BLOCK_TIME
       : 0;
   const elapsed = Math.floor((now - syncedAt) / 1000);
-  const remaining =
-    currentBlock === undefined || endBlock === undefined
-      ? null
-      : Math.max(0, baseSeconds - elapsed);
+  const remaining = currentBlock === undefined || endBlock === undefined ? null : Math.max(0, baseSeconds - elapsed);
 
   // When our local estimate reaches 0 but the chain-side `currentBlock` hasn't
   // caught up past `endBlock` yet, wagmi's default block-watch cadence (~4s)
@@ -37,12 +34,7 @@ export function useBlockCountdown(endBlock: bigint | undefined): number | null {
   // aggressively in that window so the UI flips as soon as the closing block
   // is observable.
   useEffect(() => {
-    if (
-      remaining !== 0 ||
-      currentBlock === undefined ||
-      endBlock === undefined ||
-      currentBlock > endBlock
-    ) {
+    if (remaining !== 0 || currentBlock === undefined || endBlock === undefined || currentBlock > endBlock) {
       return;
     }
     const id = setInterval(() => {

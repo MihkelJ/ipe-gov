@@ -36,16 +36,7 @@ export function useProposal(id: bigint): ProposalState {
     return { isLoading, finalized: false, votingClosed: false, refetch };
   }
 
-  const [
-    proposer,
-    startBlock,
-    endBlock,
-    forVotes,
-    againstVotes,
-    abstainVotes,
-    finalized,
-    descriptionCid,
-  ] = data;
+  const [proposer, startBlock, endBlock, forVotes, againstVotes, abstainVotes, finalized, descriptionCid] = data;
 
   return {
     isLoading,

@@ -1,22 +1,12 @@
-import {
-  createPublicClient,
-  http,
-  toFunctionSelector,
-  type Chain,
-  type Hex,
-} from "viem";
+import { createPublicClient, http, toFunctionSelector, type Chain, type Hex } from "viem";
 import { PublicLockABI } from "@ipe-gov/sdk";
 
 /** Both `purchase` overloads on PublicLockV15 — the array form used by our UI
  *  and the tuple form some wallets prefer. Either one targeting the chain's
  *  lock counts as a passport claim and is sponsorable even for non-members. */
 const PURCHASE_SELECTORS: readonly string[] = [
-  toFunctionSelector(
-    "purchase(uint256[],address[],address[],address[],bytes[])",
-  ),
-  toFunctionSelector(
-    "purchase((uint256,address,address,address,address,bytes,uint256)[])",
-  ),
+  toFunctionSelector("purchase(uint256[],address[],address[],address[],bytes[])"),
+  toFunctionSelector("purchase((uint256,address,address,address,address,bytes,uint256)[])"),
 ].map((s) => s.toLowerCase().slice(2));
 
 export class PolicyError extends Error {
@@ -67,11 +57,7 @@ export type PolicyContext = {
  * entirely. This is how we sponsor ens-api's mint wallet on mainnet without
  * deploying an Unlock lock there just for one system actor.
  */
-export async function enforcePolicy(
-  userOp: UserOp,
-  _rpcUrl: string,
-  ctx: PolicyContext,
-): Promise<void> {
+export async function enforcePolicy(userOp: UserOp, _rpcUrl: string, ctx: PolicyContext): Promise<void> {
   if (!userOp.sender) return;
 
   // Operator allowlist short-circuits both the membership gate and the

@@ -1,12 +1,7 @@
 import { useMemo } from "react";
 import { zeroAddress, type Hex } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
-import {
-  LiquidDelegationABI,
-  PublicLockABI,
-  UnlockConfidentialGovernorLiquidABI,
-  addresses,
-} from "@ipe-gov/sdk";
+import { LiquidDelegationABI, PublicLockABI, UnlockConfidentialGovernorLiquidABI, addresses } from "@ipe-gov/sdk";
 
 /** Matches `UnlockConfidentialGovernorLiquid.MAX_DELEGATORS_PER_CALL`. */
 export const DELEGATE_BATCH_SIZE = 64;
@@ -51,10 +46,7 @@ export type Claimability = {
  *  voted directly or been credited through a different path. The governor
  *  reverts atomically on any single bad entry — filtering client-side turns
  *  an opaque RPC error into a truthful "N of M claimable" UI. */
-export function useClaimableDelegators(
-  proposalId: bigint,
-  delegatee: Hex | undefined,
-): Claimability {
+export function useClaimableDelegators(proposalId: bigint, delegatee: Hex | undefined): Claimability {
   const transitive = useReadContract({
     address: addresses.sepolia.liquidDelegation as Hex,
     abi: LiquidDelegationABI,
@@ -111,10 +103,8 @@ export function useClaimableDelegators(
       const directlyVoted = status.data[i * 3]?.result as boolean | undefined;
       const countedBy = status.data[i * 3 + 1]?.result as Hex | undefined;
       const terminal = status.data[i * 3 + 2]?.result as Hex | undefined;
-      const terminalMatches =
-        terminal && delegateeLower && terminal.toLowerCase() === delegateeLower;
-      const isClaimable =
-        directlyVoted === false && countedBy === zeroAddress && terminalMatches;
+      const terminalMatches = terminal && delegateeLower && terminal.toLowerCase() === delegateeLower;
+      const isClaimable = directlyVoted === false && countedBy === zeroAddress && terminalMatches;
       (isClaimable ? claimableOut : excludedOut).push(all[i]);
     }
     return { claimable: claimableOut, excluded: excludedOut };

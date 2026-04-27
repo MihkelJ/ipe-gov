@@ -18,10 +18,7 @@ export type ProposalDescriptionPayload = {
 };
 
 /** Fetches a pinned proposal description JSON envelope from an IPFS gateway. */
-export async function fetchProposalDescription(
-  cid: string,
-  gateway?: string,
-): Promise<ProposalDescriptionPayload> {
+export async function fetchProposalDescription(cid: string, gateway?: string): Promise<ProposalDescriptionPayload> {
   const res = await fetch(ipfsGatewayUrl(cid, gateway));
   if (!res.ok) {
     throw new Error(`IPFS gateway returned ${res.status} for ${cid}`);

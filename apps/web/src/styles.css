@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -84,30 +84,56 @@
 }
 
 @keyframes ballot-sweep {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(100%); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes ballot-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 @keyframes folio-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes seal-stamp {
-  0%   { opacity: 0; transform: rotate(-22deg) scale(2.2); }
-  60%  { opacity: 1; transform: rotate(-12deg) scale(0.94); }
-  100% { opacity: 0.92; transform: rotate(-12deg) scale(1); }
+  0% {
+    opacity: 0;
+    transform: rotate(-22deg) scale(2.2);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(0.94);
+  }
+  100% {
+    opacity: 0.92;
+    transform: rotate(-12deg) scale(1);
+  }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
-    font-feature-settings: 'ss01', 'ss03', 'liga';
-    font-variation-settings: 'opsz' 144, 'SOFT' 0;
+    font-family: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+    font-feature-settings: "ss01", "ss03", "liga";
+    font-variation-settings:
+      "opsz" 144,
+      "SOFT" 0;
   }
 }

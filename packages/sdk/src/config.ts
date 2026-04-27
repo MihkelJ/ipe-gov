@@ -14,8 +14,6 @@ export const ENS_PARENT_NAME = "govdemo.eth";
  * non-bundler methods straight to the upstream node and routes bundler/
  * paymaster methods to Pimlico.
  */
-export const PAYMASTER_PROXY_BASE =
-  "https://ipe-gov-paymaster-proxy.ipe-gov.workers.dev/rpc";
+export const PAYMASTER_PROXY_BASE = "https://ipe-gov-paymaster-proxy.ipe-gov.workers.dev/rpc";
 
-export const paymasterProxyRpcUrl = (chainId: number): string =>
-  `${PAYMASTER_PROXY_BASE}/${chainId}`;
+export const paymasterProxyRpcUrl = (chainId: number): string => `${PAYMASTER_PROXY_BASE}/${chainId}`;

@@ -4,12 +4,7 @@ import { sendCalls, waitForCallsStatus } from "viem/actions";
 import { entryPoint08Address } from "viem/account-abstraction";
 import { sepolia } from "viem/chains";
 import { useSign7702Authorization } from "@privy-io/react-auth";
-import {
-  useCapabilities,
-  usePublicClient,
-  useSwitchChain,
-  useWalletClient,
-} from "wagmi";
+import { useCapabilities, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
 import { to7702SimpleSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
@@ -21,14 +16,10 @@ export type WriteParams = {
   args: readonly unknown[];
 };
 
-const PAYMASTER_BASE = import.meta.env.VITE_PAYMASTER_PROXY_URL as
-  | string
-  | undefined;
+const PAYMASTER_BASE = import.meta.env.VITE_PAYMASTER_PROXY_URL as string | undefined;
 // The proxy routes by chainId in the path. Sponsored writes target the
 // governance chain (Sepolia); Base/Mainnet writes are not gas-sponsored.
-const PAYMASTER_URL = PAYMASTER_BASE
-  ? `${PAYMASTER_BASE}/${sepolia.id}`
-  : undefined;
+const PAYMASTER_URL = PAYMASTER_BASE ? `${PAYMASTER_BASE}/${sepolia.id}` : undefined;
 
 /**
  * Submit a contract write, sponsored by Pimlico.
@@ -134,8 +125,7 @@ export function useSponsoredWrite() {
         bundlerTransport: http(PAYMASTER_URL),
         paymaster: pimlicoClient,
         userOperation: {
-          estimateFeesPerGas: async () =>
-            (await pimlicoClient.getUserOperationGasPrice()).fast,
+          estimateFeesPerGas: async () => (await pimlicoClient.getUserOperationGasPrice()).fast,
         },
       });
 
