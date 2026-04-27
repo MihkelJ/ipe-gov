@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { isAddress, zeroAddress, type Address, type Hex } from 'viem'
 import type { ProposalBody } from '@ipe-gov/ipfs'
@@ -27,6 +27,12 @@ import { useProposalDescription } from '../hooks/useProposalDescription'
 import { truncateAddress } from '#/lib/address'
 import RequireUnlockMembership from '#/components/RequireUnlockMembership'
 import { Button } from '#/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
+
+// Same warm sealing-wax ink that anchors the wizard and the list. Scoped to
+// this route via inline style on <main> so the rest of the app keeps its
+// monochrome ledger palette.
+const INK = 'oklch(0.55 0.18 35)'
 
 export const Route = createFileRoute('/proposals/$proposalId')({
   head: ({ params }) => ({
@@ -54,7 +60,7 @@ function ProposalPage() {
   } = useProposalDescription(proposal.descriptionCid)
   const [status, setStatus] = useState<string>('')
 
-  const title = body?.headline
+  const headline = body?.headline
     ? body.headline
     : description
       ? description
@@ -62,141 +68,316 @@ function ProposalPage() {
         ? 'Loading description…'
         : `Proposal #${proposalId}`
 
+  const tone: StatusTone = proposal.finalized
+    ? 'finalized'
+    : proposal.votingClosed
+      ? 'awaiting'
+      : 'open'
+
   return (
-    <main className="mx-auto max-w-3xl px-6 pb-24 pt-10">
-      <div className="mb-10">
+    <main
+      style={{ ['--ink' as string]: INK }}
+      className="relative mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 sm:pt-12"
+    >
+      <div className="mb-6 sm:mb-8">
         <Link
           to="/proposals"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
+          className="group inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground transition-colors hover:text-foreground sm:text-[11px]"
         >
-          ← All proposals
+          <ArrowLeft
+            aria-hidden
+            className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5"
+          />
+          The Register
         </Link>
       </div>
 
-      <header className="mb-10 grid grid-cols-[5.5rem_1fr] items-start gap-6 border-b border-border pb-8">
-        <div className="font-light leading-none tabular-nums text-muted-foreground text-[5rem]">
-          {String(proposalId).padStart(2, '0')}
+      <Hero
+        proposalId={proposalId}
+        headline={headline}
+        tone={tone}
+        endBlock={proposal.endBlock}
+        finalized={proposal.finalized}
+        votingClosed={proposal.votingClosed}
+        body={body}
+      />
+
+      <section className="mt-10 grid gap-12 sm:mt-12 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
+        {/* Brief on the left at lg+, second on mobile so the action panel
+            comes first under the hero. */}
+        <div className="min-w-0 lg:order-1">
+          {body ? <Brief body={body} /> : null}
         </div>
-        <div className="min-w-0 space-y-4 pt-2">
-          <h1 className="text-2xl font-semibold leading-tight tracking-tight break-words">
-            {title}
-          </h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <DetailStatusChip
-              finalized={proposal.finalized}
-              votingClosed={proposal.votingClosed}
-            />
-            <BlockMeta
-              endBlock={proposal.endBlock}
-              finalized={proposal.finalized}
-              votingClosed={proposal.votingClosed}
-            />
-          </div>
-        </div>
-      </header>
 
-      {body ? <ProposalBrief body={body} /> : null}
-
-      <ProposalActions id={id} proposal={proposal} onStatusChange={setStatus} />
-
-      {status ? (
-        <p
-          role="status"
-          className="mt-10 border-t border-border pt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground"
-        >
-          {status}
-        </p>
-      ) : null}
+        {/* Action panel — sticky right rail at lg+, ordered first on mobile so
+            members land on the ballot before the long brief. */}
+        <aside className="order-first lg:order-2 lg:sticky lg:top-24 lg:self-start">
+          <ActionPanel
+            id={id}
+            proposal={proposal}
+            onStatusChange={setStatus}
+            status={status}
+          />
+        </aside>
+      </section>
     </main>
   )
 }
 
-function DetailStatusChip({
+/* ============================================================
+ * Hero — serial number, headline, status chip, meta strip.
+ * ============================================================ */
+
+type StatusTone = 'open' | 'awaiting' | 'finalized'
+
+function Hero({
+  proposalId,
+  headline,
+  tone,
+  endBlock,
   finalized,
   votingClosed,
+  body,
 }: {
+  proposalId: string
+  headline: string
+  tone: StatusTone
+  endBlock: bigint | undefined
   finalized: boolean
   votingClosed: boolean
+  body: ProposalBody | undefined
 }) {
-  const { label, chrome } = finalized
-    ? {
-        label: 'Finalized',
-        chrome: 'border-border bg-secondary/60 text-muted-foreground',
-      }
-    : votingClosed
-      ? {
-          label: 'Awaiting finalize',
-          chrome: 'border-foreground/40 text-foreground/85',
-        }
-      : {
-          label: 'Voting open',
-          chrome: 'border-foreground/80 text-foreground',
-        }
+  const remaining = useBlockCountdown(
+    !finalized && !votingClosed ? endBlock : undefined,
+  )
+
+  const totalCost = body?.totalCost
+
+  return (
+    <header className="border-b border-border pb-8 sm:pb-10">
+      <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:text-[11px]">
+        Motion · Sepolia
+      </div>
+      <div className="mt-3 grid gap-6 sm:mt-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-8">
+        <div className="min-w-0">
+          <div
+            className="font-display text-[clamp(3.25rem,12vw,5.5rem)] font-[700] leading-[0.9] tabular-nums tracking-[-0.03em]"
+            style={{
+              color: 'var(--ink)',
+              fontVariationSettings: "'opsz' 144, 'SOFT' 0",
+            }}
+          >
+            № {String(proposalId).padStart(2, '0')}
+          </div>
+          <h1 className="mt-4 break-words font-serif text-[1.5rem] leading-snug text-foreground sm:text-[1.75rem] lg:text-[2rem]">
+            {headline}
+          </h1>
+          {body ? (
+            <HeroAuthors
+              lead={body.authors.lead}
+              coAuthors={body.authors.coAuthors}
+            />
+          ) : null}
+        </div>
+        <div className="lg:pt-3">
+          <DetailStatusChip tone={tone} />
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-baseline gap-x-5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:text-[11px]">
+        {endBlock !== undefined ? (
+          tone === 'open' && remaining !== null ? (
+            <span className="text-foreground">
+              <span style={{ color: 'var(--ink)' }}>●</span>{' '}
+              <span>closes in {formatCountdown(remaining)}</span>
+            </span>
+          ) : tone === 'awaiting' ? (
+            <span className="text-foreground/85">
+              closed at block {endBlock.toString()}
+            </span>
+          ) : (
+            <span className="text-foreground/70">
+              closed at block {endBlock.toString()}
+            </span>
+          )
+        ) : null}
+        {totalCost !== undefined && totalCost > 0 ? (
+          <span>{formatAmount(totalCost)} USDC</span>
+        ) : null}
+      </div>
+    </header>
+  )
+}
+
+/* ============================================================
+ * HeroAuthors — lead + co-authors surfaced beneath the headline.
+ *   Each name is a clickable link to the member dossier; mono
+ *   role labels ("Moved by" / "with") frame the serif names so
+ *   the line reads as a printed dedication.
+ * ============================================================ */
+
+function HeroAuthors({
+  lead,
+  coAuthors,
+}: {
+  lead: Address
+  coAuthors: readonly Address[]
+}) {
+  return (
+    <div className="mt-5 flex flex-col flex-wrap items-baseline gap-x-3 gap-y-1.5 sm:flex-row">
+      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+        Moved by
+      </span>
+      <AuthorLink address={lead} />
+      {coAuthors.length > 0 ? (
+        <>
+          <span className="hidden font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:inline">
+            ·
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+            with
+          </span>
+          <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            {coAuthors.map((a, i) => (
+              <span key={a} className="flex items-baseline gap-x-2">
+                {i > 0 ? (
+                  <span
+                    aria-hidden
+                    className="font-mono text-[10px] text-muted-foreground/60"
+                  >
+                    ·
+                  </span>
+                ) : null}
+                <AuthorLink address={a} />
+              </span>
+            ))}
+          </span>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+function AuthorLink({ address }: { address: Address }) {
+  const { data: name } = useIdentity(address)
+  return (
+    <Link
+      to="/members/$address"
+      params={{ address }}
+      className="group inline-flex items-baseline gap-1.5 transition-colors hover:[color:var(--ink)]"
+    >
+      <span className="font-serif text-[15px] text-foreground transition-colors group-hover:[color:var(--ink)] sm:text-[16px]">
+        {name ?? truncateAddress(address)}
+      </span>
+      {name ? (
+        <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline">
+          {truncateAddress(address)}
+        </span>
+      ) : null}
+    </Link>
+  )
+}
+
+function DetailStatusChip({ tone }: { tone: StatusTone }) {
+  const isOpen = tone === 'open'
+  const isAwaiting = tone === 'awaiting'
+  const label =
+    tone === 'open'
+      ? 'Voting open'
+      : tone === 'awaiting'
+        ? 'Awaiting finalize'
+        : 'Finalized'
   return (
     <span
-      className={`inline-flex select-none items-center whitespace-nowrap border ${chrome} px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em]`}
+      className="inline-flex select-none items-center whitespace-nowrap px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em]"
+      style={{
+        border: isOpen
+          ? '1px solid var(--ink)'
+          : isAwaiting
+            ? '1px solid color-mix(in oklch, currentColor 28%, transparent)'
+            : '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+        color: isOpen ? 'var(--ink)' : isAwaiting ? undefined : 'var(--muted-foreground)',
+        background: isOpen
+          ? 'color-mix(in oklch, var(--ink) 10%, transparent)'
+          : tone === 'finalized'
+            ? 'color-mix(in oklch, currentColor 6%, transparent)'
+            : 'transparent',
+      }}
     >
       {label}
     </span>
   )
 }
 
-function BlockMeta({
-  endBlock,
-  finalized,
-  votingClosed,
-}: {
-  endBlock: bigint | undefined
-  finalized: boolean
-  votingClosed: boolean
-}) {
-  const remaining = useBlockCountdown(
-    !finalized && !votingClosed ? endBlock : undefined,
-  )
-  if (endBlock === undefined) return null
-  const verb = finalized ? 'closed' : votingClosed ? 'closed at' : 'closes in'
-  return (
-    <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-      {!finalized && !votingClosed && remaining !== null ? (
-        <span className="text-foreground/90">
-          closes in {formatCountdown(remaining)}
-        </span>
-      ) : (
-        <>
-          {verb} block {endBlock.toString()}
-        </>
-      )}
-    </span>
-  )
-}
+/* ============================================================
+ * Action panel — context-sensitive ballot / finalize / tally.
+ *   Preserves the entire dispatch tree from the original
+ *   ProposalActions; only the surrounding chrome changes.
+ * ============================================================ */
 
-type ActionsProps = {
+function ActionPanel({
+  id,
+  proposal,
+  onStatusChange,
+  status,
+}: {
   id: bigint
   proposal: ReturnType<typeof useProposal>
   onStatusChange: (s: string) => void
+  status: string
+}) {
+  return (
+    <div className="space-y-3">
+      <ActionDispatch id={id} proposal={proposal} onStatusChange={onStatusChange} />
+      {status ? (
+        <p
+          role="status"
+          className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+        >
+          {status}
+        </p>
+      ) : null}
+    </div>
+  )
 }
 
-function ProposalActions({ id, proposal, onStatusChange }: ActionsProps) {
+function ActionDispatch({
+  id,
+  proposal,
+  onStatusChange,
+}: {
+  id: bigint
+  proposal: ReturnType<typeof useProposal>
+  onStatusChange: (s: string) => void
+}) {
   const { isConnected, address } = useAccount()
   const { data: isMember, isLoading: memberLoading } = useIsMember(address)
 
   if (proposal.isLoading || !proposal.handles) {
-    return <InfoBlock>Loading…</InfoBlock>
+    return <InfoCard tag="loading" title="Reading the register">Loading…</InfoCard>
   }
   if (proposal.finalized) {
     return <Tallies handles={proposal.handles} />
   }
   if (!isConnected) {
-    return <InfoBlock>Connect a wallet to vote.</InfoBlock>
+    return (
+      <InfoCard tag="locked" title="Cast your ballot">
+        Connect a wallet to vote on this motion.
+      </InfoCard>
+    )
   }
   if (memberLoading) {
-    return <InfoBlock>Checking membership status…</InfoBlock>
+    return (
+      <InfoCard tag="checking" title="Cast your ballot">
+        Checking membership status…
+      </InfoCard>
+    )
   }
   if (!isMember) {
     return (
-      <InfoBlock>
+      <InfoCard tag="restricted" title="Members only">
         You need a valid Unlock membership key to act on this proposal.
-      </InfoBlock>
+      </InfoCard>
     )
   }
   if (proposal.votingClosed) {
@@ -217,13 +398,53 @@ function ProposalActions({ id, proposal, onStatusChange }: ActionsProps) {
   )
 }
 
-function InfoBlock({ children }: { children: React.ReactNode }) {
+/* ============================================================
+ * Info card — generic chrome for "loading" / "connect" / etc.
+ * ============================================================ */
+
+function InfoCard({
+  tag,
+  title,
+  children,
+}: {
+  tag: string
+  title: string
+  children: ReactNode
+}) {
   return (
-    <p className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-      {children}
-    </p>
+    <div className="bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+      style={{
+        border:
+          '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+      }}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <ActionTitle>{title}</ActionTitle>
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          {tag}
+        </span>
+      </div>
+      <p className="mt-3 font-serif text-[14px] italic leading-relaxed text-muted-foreground sm:text-[15px]">
+        {children}
+      </p>
+    </div>
   )
 }
+
+function ActionTitle({ children }: { children: ReactNode }) {
+  return (
+    <h2
+      className="font-display text-[1.25rem] font-[600] leading-none tracking-tight text-foreground sm:text-[1.4rem]"
+      style={{ fontVariationSettings: "'opsz' 144, 'SOFT' 0" }}
+    >
+      {children}
+    </h2>
+  )
+}
+
+/* ============================================================
+ * Finalize action
+ * ============================================================ */
 
 function FinalizeAction({
   id,
@@ -253,21 +474,39 @@ function FinalizeAction({
   }
 
   return (
-    <div className="flex flex-col items-start gap-4 border border-border bg-secondary/30 px-6 py-8">
-      <div>
-        <h2 className="mb-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Voting closed
-        </h2>
-        <p className="text-sm">
-          Reveal the encrypted tallies by finalizing this proposal.
-        </p>
+    <div
+      className="bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+      style={{
+        border:
+          '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+      }}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <ActionTitle>Voting closed</ActionTitle>
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          ready
+        </span>
       </div>
-      <Button onClick={finalize} disabled={isPending} size="lg">
+      <p className="mt-3 font-serif text-[14px] italic leading-relaxed text-muted-foreground sm:text-[15px]">
+        Reveal the encrypted tallies by finalizing this proposal.
+      </p>
+      <Button
+        onClick={finalize}
+        disabled={isPending}
+        size="lg"
+        className="mt-5 w-full cursor-pointer font-mono text-[11px] uppercase tracking-[0.2em]"
+        style={{ background: 'var(--ink)' }}
+      >
         {isPending ? 'Finalizing…' : 'Finalize proposal'}
       </Button>
     </div>
   )
 }
+
+/* ============================================================
+ * Vote action — preserves all original state / submission
+ *   behaviour. Visual chrome only is restyled.
+ * ============================================================ */
 
 type BallotStage = 'encrypting' | 'submitting' | 'sealed'
 type BallotBusy = { choice: 0 | 1 | 2; stage: BallotStage } | null
@@ -369,7 +608,11 @@ function VoteAction({
     setBusy({ choice: support, stage: 'encrypting' })
     onStatusChange('Encrypting vote…')
     try {
-      const enc = await encryptVote(addresses.sepolia.governorLiquid as Hex, address, support)
+      const enc = await encryptVote(
+        addresses.sepolia.governorLiquid as Hex,
+        address,
+        support,
+      )
       setBusy({ choice: support, stage: 'submitting' })
       onStatusChange('Submitting transaction…')
       await sponsoredWrite({
@@ -389,14 +632,9 @@ function VoteAction({
     }
   }
 
-  // Decide which PRIMARY block to render. Only one at a time.
-  let primary: React.ReactNode
+  let primary: ReactNode
   if (alreadyDirectlyVoted) {
-    primary = (
-      <SealedBlock>
-        Your ballot is sealed in this motion.
-      </SealedBlock>
-    )
+    primary = <SealedBlock>Your ballot is sealed in this motion.</SealedBlock>
   } else if (hasDelegate && !countedByDelegate) {
     primary = (
       <DelegationCertificate
@@ -426,9 +664,7 @@ function VoteAction({
     )
   }
 
-  // SECONDARY: either the tail claim-only block (already-voted with delegators
-  // still to collect) OR the delegate picker (haven't voted, haven't delegated).
-  let secondary: React.ReactNode = null
+  let secondary: ReactNode = null
   if (alreadyDirectlyVoted && hasClaimable) {
     secondary = (
       <ClaimOnlyBlock
@@ -451,14 +687,9 @@ function VoteAction({
   }
 
   return (
-    <div>
+    <div className="space-y-3">
       {primary}
-      {secondary ? (
-        <>
-          <div className="my-10 border-t border-border" />
-          {secondary}
-        </>
-      ) : null}
+      {secondary}
     </div>
   )
 }
@@ -484,9 +715,9 @@ async function doUndelegate(
   }
 }
 
-// ============================================================
-// PRIMARY BLOCKS
-// ============================================================
+/* ============================================================
+ * Vote block — three-choice grid with ink-themed buttons.
+ * ============================================================ */
 
 function VoteBlock({
   isPending,
@@ -512,48 +743,54 @@ function VoteBlock({
   onVote: (support: 0 | 1 | 2) => void
 }) {
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Cast your ballot
-        </h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+    <div
+      className="bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+      style={{
+        border:
+          '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+      }}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <ActionTitle>Cast your ballot</ActionTitle>
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           ◆ Encrypted end-to-end
         </span>
       </div>
 
       {countedByDelegate && countedByAddr ? (
-        <p className="border-l-2 border-foreground/60 pl-4 text-sm italic text-muted-foreground">
+        <Notice>
           Your vote was already cast by{' '}
           <code className="font-mono not-italic text-foreground/85">
             {truncateAddress(countedByAddr)}
           </code>
           . Casting below overrides that.
-        </p>
+        </Notice>
       ) : null}
 
       {hasClaimable ? (
-        <p className="border-l-2 border-foreground/60 pl-4 text-sm italic">
+        <Notice>
           <BundledVoteDescription
             claimableCount={claimableCount}
             excludedCount={excludedCount}
             overflow={overflow}
           />
-        </p>
+        </Notice>
       ) : hasExcluded ? (
-        <p className="border-l-2 border-border pl-4 text-sm italic text-muted-foreground">
+        <Notice muted>
           {excludedCount} of your delegator
-          {excludedCount === 1 ? ' has' : 's have'} already voted directly — only
-          your own vote will be cast.
-        </p>
+          {excludedCount === 1 ? ' has' : 's have'} already voted directly —
+          only your own vote will be cast.
+        </Notice>
       ) : null}
 
-      <div className="grid grid-cols-3 gap-3">
-        {([
-          { label: 'For', index: 1, primary: true },
-          { label: 'Against', index: 0, primary: false },
-          { label: 'Abstain', index: 2, primary: false },
-        ] as const).map((c) => (
+      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+        {(
+          [
+            { label: 'For', index: 1, primary: true },
+            { label: 'Against', index: 0, primary: false },
+            { label: 'Abstain', index: 2, primary: false },
+          ] as const
+        ).map((c) => (
           <ChoiceButton
             key={c.index}
             label={c.label}
@@ -569,6 +806,35 @@ function VoteBlock({
     </div>
   )
 }
+
+function Notice({
+  children,
+  muted,
+}: {
+  children: ReactNode
+  muted?: boolean
+}) {
+  return (
+    <p
+      className={`mt-4 border-l-[3px] pl-4 font-serif text-[13px] italic leading-relaxed sm:text-[14px] ${
+        muted ? 'text-muted-foreground' : 'text-foreground/85'
+      }`}
+      style={{
+        borderLeftColor: muted
+          ? 'color-mix(in oklch, currentColor 16%, transparent)'
+          : 'var(--ink)',
+      }}
+    >
+      {children}
+    </p>
+  )
+}
+
+/* ============================================================
+ * Choice button — three states: idle / busy (animated) / dim.
+ *   Busy state pulls the same ballot-sweep keyframe used by the
+ *   wizard's progress rail and the list's open cards.
+ * ============================================================ */
 
 function ChoiceButton({
   label,
@@ -587,18 +853,38 @@ function ChoiceButton({
   busyStage?: BallotStage
   dimmed?: boolean
 }) {
-  const base =
-    'group relative flex flex-col items-start gap-3 overflow-hidden border px-5 py-5 text-left transition-all duration-500 disabled:cursor-not-allowed'
-  const idle = primary
-    ? 'border-foreground bg-foreground text-background hover:bg-foreground/90'
-    : 'border-border bg-transparent text-foreground hover:border-foreground/70 hover:bg-accent'
-  const active = primary
-    ? 'border-foreground bg-foreground text-background'
-    : 'border-foreground bg-accent text-foreground'
-  const dim = 'border-border/40 bg-transparent text-foreground/25 saturate-0'
-  const chrome = busyStage ? active : dimmed ? dim : idle
+  const topLabel =
+    busyStage ?? (index === 1 ? 'yea' : index === 0 ? 'nay' : 'abstain')
 
-  const topLabel = busyStage ?? (index === 1 ? 'yea' : index === 0 ? 'nay' : 'abstain')
+  // Three visual states: idle (default), busy/active, dimmed (sibling busy).
+  const idleStyle: React.CSSProperties = primary
+    ? {
+        border: '1px solid var(--ink)',
+        background: 'color-mix(in oklch, var(--ink) 10%, transparent)',
+        color: 'var(--ink)',
+      }
+    : {
+        border:
+          '1px solid color-mix(in oklch, currentColor 24%, transparent)',
+        background: 'transparent',
+      }
+  const activeStyle: React.CSSProperties = primary
+    ? {
+        border: '1px solid var(--ink)',
+        background: 'var(--ink)',
+        color: 'var(--primary-foreground)',
+      }
+    : {
+        border:
+          '1px solid color-mix(in oklch, currentColor 60%, transparent)',
+        background: 'color-mix(in oklch, currentColor 6%, transparent)',
+      }
+  const dimStyle: React.CSSProperties = {
+    border: '1px solid color-mix(in oklch, currentColor 10%, transparent)',
+    background: 'transparent',
+    opacity: 0.35,
+  }
+  const style = busyStage ? activeStyle : dimmed ? dimStyle : idleStyle
 
   return (
     <button
@@ -606,35 +892,46 @@ function ChoiceButton({
       onClick={onClick}
       disabled={disabled}
       aria-busy={Boolean(busyStage)}
-      className={`${base} ${chrome}`}
+      className="group relative flex cursor-pointer flex-col items-start gap-2 overflow-hidden px-4 py-3 text-left transition-all duration-300 disabled:cursor-not-allowed sm:gap-3 sm:px-5 sm:py-4"
+      style={style}
     >
       {busyStage && busyStage !== 'sealed' ? (
         <span
           aria-hidden
-          className={`pointer-events-none absolute inset-y-0 left-0 w-[2px] [animation:ballot-sweep_1.8s_cubic-bezier(.55,0,.45,1)_infinite] ${
-            primary ? 'bg-background/80' : 'bg-foreground/70'
-          }`}
+          className="pointer-events-none absolute inset-y-0 left-0 w-full [animation:ballot-sweep_1.8s_cubic-bezier(.55,0,.45,1)_infinite]"
+          style={{
+            background:
+              'linear-gradient(90deg, transparent 0%, transparent 38%, color-mix(in oklch, white 60%, transparent) 50%, transparent 62%, transparent 100%)',
+          }}
         />
       ) : null}
 
-      <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">
+      <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] opacity-80">
         {busyStage ? (
           <span
             aria-hidden
             className={`inline-block h-1.5 w-1.5 rotate-45 ${
-              busyStage === 'sealed' ? '' : '[animation:ballot-pulse_1.2s_ease-in-out_infinite]'
-            } ${primary ? 'bg-background' : 'bg-foreground'}`}
+              busyStage === 'sealed'
+                ? ''
+                : '[animation:ballot-pulse_1.2s_ease-in-out_infinite]'
+            }`}
+            style={{ background: 'currentColor' }}
           />
         ) : null}
         <span>{topLabel}</span>
       </span>
 
-      <span className="text-2xl font-semibold tracking-tight">{label}</span>
+      <span
+        className="font-display text-[1.5rem] font-[600] leading-none tracking-tight sm:text-[1.75rem]"
+        style={{ fontVariationSettings: "'opsz' 144, 'SOFT' 0" }}
+      >
+        {label}
+      </span>
 
       {busyStage ? (
         <span
           aria-hidden
-          className="flex gap-1 font-mono text-[11px] leading-none tracking-[0.28em]"
+          className="flex gap-1 font-mono text-[10px] leading-none tracking-[0.28em]"
         >
           {([0, 1, 2] as const).map((i) => {
             const filled =
@@ -647,7 +944,9 @@ function ChoiceButton({
             return (
               <span
                 key={i}
-                className={`transition-opacity duration-300 ${filled ? 'opacity-100' : 'opacity-25'}`}
+                className={`transition-opacity duration-300 ${
+                  filled ? 'opacity-100' : 'opacity-25'
+                }`}
               >
                 ◆
               </span>
@@ -659,6 +958,10 @@ function ChoiceButton({
   )
 }
 
+/* ============================================================
+ * Delegation certificate, sealed block, claim-only block.
+ * ============================================================ */
+
 function DelegationCertificate({
   delegate,
   onRevoke,
@@ -668,51 +971,75 @@ function DelegationCertificate({
   onRevoke: () => void
   isPending: boolean
 }) {
+  const { data: name } = useIdentity(delegate)
   return (
-    <div className="relative border-2 border-border bg-secondary/30 px-6 py-8">
-      <div className="absolute left-6 top-0 -translate-y-1/2 bg-background px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        Delegation active
-      </div>
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Your ballot is held by
-          </div>
-          <code className="block text-lg font-mono text-foreground">
-            {truncateAddress(delegate)}
-          </code>
-        </div>
-        <p className="max-w-md text-sm text-muted-foreground">
-          They&rsquo;ll cast your vote on this motion. Revoke to reclaim it and
-          vote yourself.
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRevoke}
-          disabled={isPending}
+    <div
+      className="relative bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+      style={{
+        border: '1px solid var(--ink)',
+        background: 'color-mix(in oklch, var(--ink) 6%, transparent)',
+      }}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <ActionTitle>Delegation active</ActionTitle>
+        <span
+          className="font-mono text-[10px] uppercase tracking-[0.2em]"
+          style={{ color: 'var(--ink)' }}
         >
-          Revoke delegation
-        </Button>
+          held
+        </span>
       </div>
+      <div className="mt-4 space-y-1">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          Your ballot is held by
+        </div>
+        <div className="font-serif text-[17px] text-foreground sm:text-[18px]">
+          {name ?? truncateAddress(delegate)}
+        </div>
+        {name ? (
+          <div className="font-mono text-[11px] text-muted-foreground">
+            {truncateAddress(delegate)}
+          </div>
+        ) : null}
+      </div>
+      <p className="mt-4 font-serif text-[13px] italic leading-relaxed text-muted-foreground sm:text-[14px]">
+        They&rsquo;ll cast your vote on this motion. Revoke to reclaim it and
+        vote yourself.
+      </p>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRevoke}
+        disabled={isPending}
+        className="mt-5 cursor-pointer font-mono text-[10px] uppercase tracking-[0.2em]"
+      >
+        Revoke delegation
+      </Button>
     </div>
   )
 }
 
-function SealedBlock({ children }: { children: React.ReactNode }) {
+function SealedBlock({ children }: { children: ReactNode }) {
   return (
-    <div className="border-t border-b border-border py-10 text-center">
-      <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        Ballot recorded
+    <div
+      className="relative bg-secondary/40 px-4 py-5 text-center sm:px-5 sm:py-6"
+      style={{
+        border: '1px solid var(--ink)',
+        background: 'color-mix(in oklch, var(--ink) 6%, transparent)',
+      }}
+    >
+      <div
+        className="font-mono text-[10px] uppercase tracking-[0.22em]"
+        style={{ color: 'var(--ink)' }}
+      >
+        Ballot sealed
       </div>
-      <p className="text-lg text-foreground">{children}</p>
+      <p className="mt-3 font-serif text-[16px] leading-snug text-foreground sm:text-[17px]">
+        {children}
+      </p>
     </div>
   )
 }
-
-// ============================================================
-// SECONDARY BLOCKS
-// ============================================================
 
 function ClaimOnlyBlock({
   isPending,
@@ -730,25 +1057,29 @@ function ClaimOnlyBlock({
   onClaim: (support: 0 | 1 | 2) => void
 }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="mb-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          You still hold delegated voting power
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          <DelegatorClaimDescription
-            claimableCount={claimableCount}
-            excludedCount={excludedCount}
-            overflow={overflow}
-          />
-        </p>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        {([
-          { label: 'Claim as For', index: 1 },
-          { label: 'Claim as Against', index: 0 },
-          { label: 'Claim as Abstain', index: 2 },
-        ] as const).map((c) => (
+    <div
+      className="bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+      style={{
+        border:
+          '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+      }}
+    >
+      <ActionTitle>Delegated voting power remains</ActionTitle>
+      <p className="mt-3 font-serif text-[13px] italic leading-relaxed text-muted-foreground sm:text-[14px]">
+        <DelegatorClaimDescription
+          claimableCount={claimableCount}
+          excludedCount={excludedCount}
+          overflow={overflow}
+        />
+      </p>
+      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+        {(
+          [
+            { label: 'Claim · For', index: 1 },
+            { label: 'Claim · Against', index: 0 },
+            { label: 'Claim · Abstain', index: 2 },
+          ] as const
+        ).map((c) => (
           <ChoiceButton
             key={c.index}
             label={c.label}
@@ -763,6 +1094,10 @@ function ClaimOnlyBlock({
     </div>
   )
 }
+
+/* ============================================================
+ * Delegate picker block — find a member to hold your vote.
+ * ============================================================ */
 
 function DelegatePickerBlock({
   id,
@@ -812,7 +1147,6 @@ function DelegatePickerBlock({
               r.owner.toLowerCase().includes(query) ||
               (r.name ? r.name.toLowerCase().includes(query) : false),
           )
-    // Named members first so community identities surface over raw hex.
     matched.sort((a, b) => {
       if (!!a.name === !!b.name) {
         return (a.name ?? a.owner).localeCompare(b.name ?? b.owner)
@@ -851,52 +1185,68 @@ function DelegatePickerBlock({
   const buttonDisabled = isPending || !normalized || checking || !check.ok
   const selectedLower = normalized?.toLowerCase()
 
+  const idle = 'color-mix(in oklch, currentColor 16%, transparent)'
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Or delegate your vote
-        </h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-          Per-proposal · revocable
+    <div
+      className="bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+      style={{ border: `1px solid ${idle}` }}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <ActionTitle>Or delegate your vote</ActionTitle>
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          per-proposal · revocable
         </span>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           placeholder="Search name or paste 0x…"
           value={addr}
           onChange={(e) => setAddr(e.target.value)}
-          className="flex-1 border border-border bg-background px-3 py-2 font-mono text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground"
           spellCheck={false}
+          className="flex-1 bg-background px-3 py-2 font-mono text-sm outline-none transition-colors placeholder:text-muted-foreground"
+          style={{ border: `1px solid ${idle}` }}
         />
-        <Button onClick={doDelegate} disabled={buttonDisabled} variant="outline">
+        <Button
+          onClick={doDelegate}
+          disabled={buttonDisabled}
+          variant="outline"
+          className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.2em]"
+        >
           Delegate
         </Button>
       </div>
 
       {addr && !normalized ? (
-        <p className="border-l-2 border-destructive pl-3 text-xs italic text-destructive">
+        <p
+          className="mt-3 border-l-[3px] border-destructive pl-3 font-serif text-[12px] italic text-destructive sm:text-[13px]"
+        >
           Not a valid 0x address.
         </p>
       ) : checking ? (
-        <p className="border-l-2 border-border pl-3 text-xs italic text-muted-foreground">
+        <p
+          className="mt-3 border-l-[3px] pl-3 font-serif text-[12px] italic text-muted-foreground sm:text-[13px]"
+          style={{ borderLeftColor: idle }}
+        >
           Checking target…
         </p>
       ) : targetError ? (
-        <p className="border-l-2 border-destructive pl-3 text-xs italic text-destructive">
+        <p className="mt-3 border-l-[3px] border-destructive pl-3 font-serif text-[12px] italic text-destructive sm:text-[13px]">
           {targetError}
         </p>
       ) : null}
 
-      <MemberPickerList
-        isLoading={membersLoading}
-        totalOwners={owners.length}
-        filtered={filteredMembers}
-        selectedLower={selectedLower}
-        onPick={setAddr}
-      />
+      <div className="mt-4">
+        <MemberPickerList
+          isLoading={membersLoading}
+          totalOwners={owners.length}
+          filtered={filteredMembers}
+          selectedLower={selectedLower}
+          onPick={setAddr}
+        />
+      </div>
     </div>
   )
 }
@@ -914,38 +1264,46 @@ function MemberPickerList({
   selectedLower: string | undefined
   onPick: (addr: Hex) => void
 }) {
+  const idle = 'color-mix(in oklch, currentColor 16%, transparent)'
   if (isLoading) {
     return (
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
         Loading members…
       </p>
     )
   }
   if (totalOwners === 0) {
     return (
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
         No members yet — paste an address to delegate.
       </p>
     )
   }
   if (filtered.length === 0) {
     return (
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
         No matching members.
       </p>
     )
   }
   return (
-    <div className="max-h-64 divide-y divide-border overflow-y-auto border border-border">
-      {filtered.map((owner) => (
-        <DelegatePickerRow
+    <ul
+      className="max-h-64 overflow-y-auto bg-background"
+      style={{ border: `1px solid ${idle}` }}
+    >
+      {filtered.map((owner, i) => (
+        <li
           key={owner}
-          owner={owner}
-          isSelected={selectedLower === owner.toLowerCase()}
-          onPick={onPick}
-        />
+          style={i > 0 ? { borderTop: `1px solid ${idle}` } : undefined}
+        >
+          <DelegatePickerRow
+            owner={owner}
+            isSelected={selectedLower === owner.toLowerCase()}
+            onPick={onPick}
+          />
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }
 
@@ -963,24 +1321,27 @@ function DelegatePickerRow({
     <button
       type="button"
       onClick={() => onPick(owner)}
-      className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors ${
+      className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors ${
         isSelected
           ? 'bg-accent text-foreground'
           : 'text-foreground/85 hover:bg-accent/60 hover:text-foreground'
       }`}
     >
-      <span className="min-w-0 flex items-baseline gap-3">
+      <span className="flex min-w-0 items-baseline gap-3">
         <span className="truncate font-serif text-[15px]">
           {name ?? truncateAddress(owner)}
         </span>
         {name ? (
-          <span className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <span className="truncate font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             {truncateAddress(owner)}
           </span>
         ) : null}
       </span>
       {isSelected ? (
-        <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <span
+          className="shrink-0 font-mono text-[10px] uppercase tracking-[0.2em]"
+          style={{ color: 'var(--ink)' }}
+        >
           selected
         </span>
       ) : null}
@@ -988,9 +1349,10 @@ function DelegatePickerRow({
   )
 }
 
-// ============================================================
-// TALLIES (finalized hero)
-// ============================================================
+/* ============================================================
+ * Tallies — finalized hero. Three columns at sm+, stacked on
+ *   phones. Winning side is ink-painted with a cap rule.
+ * ============================================================ */
 
 function Tallies({ handles }: { handles: ProposalHandles }) {
   const {
@@ -998,7 +1360,12 @@ function Tallies({ handles }: { handles: ProposalHandles }) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['tallies', handles.forVotes, handles.againstVotes, handles.abstainVotes],
+    queryKey: [
+      'tallies',
+      handles.forVotes,
+      handles.againstVotes,
+      handles.abstainVotes,
+    ],
     queryFn: () =>
       publicDecryptHandles([
         handles.forVotes,
@@ -1010,8 +1377,14 @@ function Tallies({ handles }: { handles: ProposalHandles }) {
 
   if (isLoading) {
     return (
-      <div className="border-t border-b border-border py-16 text-center">
-        <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+      <div
+        className="bg-secondary/40 px-4 py-12 text-center sm:px-5"
+        style={{
+          border:
+            '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+        }}
+      >
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
           Decrypting tallies…
         </div>
       </div>
@@ -1019,52 +1392,76 @@ function Tallies({ handles }: { handles: ProposalHandles }) {
   }
   if (error) {
     return (
-      <p className="border-l-2 border-destructive pl-4 text-sm italic text-destructive">
-        Failed to decrypt tallies: {(error as Error).message}
-      </p>
+      <div
+        className="bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+        style={{
+          border:
+            '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+        }}
+      >
+        <ActionTitle>Final tally</ActionTitle>
+        <p className="mt-3 border-l-[3px] border-destructive pl-3 font-serif text-[13px] italic text-destructive sm:text-[14px]">
+          Failed to decrypt: {(error as Error).message}
+        </p>
+      </div>
     )
   }
   if (!values) return null
 
   const [forVotes, againstVotes, abstainVotes] = values
   const rows = [
-    { label: 'For', value: forVotes },
-    { label: 'Against', value: againstVotes },
-    { label: 'Abstain', value: abstainVotes },
+    { label: 'For', value: forVotes, key: 'for' },
+    { label: 'Against', value: againstVotes, key: 'against' },
+    { label: 'Abstain', value: abstainVotes, key: 'abstain' },
   ] as const
   const max = rows.reduce((m, r) => (r.value > m ? r.value : m), 0n)
 
   return (
-    <div>
-      <div className="mb-6 flex items-baseline justify-between">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Final tally
-        </h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-          Revealed via Zama FHEVM
+    <div
+      className="bg-secondary/40 px-4 py-5 sm:px-5 sm:py-6"
+      style={{
+        border:
+          '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+      }}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <ActionTitle>Final tally</ActionTitle>
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          via Zama FHEVM
         </span>
       </div>
-      <div className="grid grid-cols-3 border-t border-b border-border">
+      <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden">
         {rows.map((r) => {
           const isMax = max > 0n && r.value === max
           return (
             <div
-              key={r.label}
-              className="flex flex-col items-center gap-3 border-r border-border py-10 last:border-r-0"
+              key={r.key}
+              className="flex flex-col items-center gap-2 bg-background py-6 sm:py-8"
+              style={{
+                background: isMax
+                  ? 'color-mix(in oklch, var(--ink) 8%, transparent)'
+                  : undefined,
+              }}
             >
-              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              <div
+                className="font-mono text-[10px] uppercase tracking-[0.22em]"
+                style={{ color: isMax ? 'var(--ink)' : undefined }}
+              >
                 {r.label}
               </div>
               <div
-                className={`text-[4rem] font-light leading-none tabular-nums ${isMax ? 'text-foreground' : 'text-muted-foreground'}`}
+                className="font-display text-[2.25rem] font-[700] leading-none tabular-nums sm:text-[3rem]"
+                style={{
+                  color: isMax ? 'var(--ink)' : 'var(--muted-foreground)',
+                  fontVariationSettings: "'opsz' 144, 'SOFT' 0",
+                }}
               >
                 {r.value.toString()}
               </div>
-              {isMax ? (
-                <div className="h-px w-8 bg-foreground" />
-              ) : (
-                <div className="h-px w-8 bg-transparent" />
-              )}
+              <div
+                className="h-[2px] w-8 transition-colors"
+                style={{ background: isMax ? 'var(--ink)' : 'transparent' }}
+              />
             </div>
           )
         })}
@@ -1073,9 +1470,270 @@ function Tallies({ handles }: { handles: ProposalHandles }) {
   )
 }
 
-// ============================================================
-// SHARED UTIL
-// ============================================================
+/* ============================================================
+ * Brief — port of the wizard's authored-content sections.
+ * ============================================================ */
+
+function Brief({ body }: { body: ProposalBody }) {
+  // Not all sections are present for every motion — render only those with
+  // content so the brief stays tight.
+  const sections: Array<{ tag: string; node: ReactNode }> = []
+  if (body.problem)
+    sections.push({
+      tag: 'I',
+      node: (
+        <BriefSection tag="I" title="Problem" hint="Quantify where possible.">
+          <BriefProse>{body.problem}</BriefProse>
+        </BriefSection>
+      ),
+    })
+  if (body.solution)
+    sections.push({
+      tag: 'II',
+      node: (
+        <BriefSection tag="II" title="Solution" hint="Action authorised.">
+          <BriefProse>{body.solution}</BriefProse>
+        </BriefSection>
+      ),
+    })
+  if (body.outcomes)
+    sections.push({
+      tag: 'III',
+      node: (
+        <BriefSection
+          tag="III"
+          title="Outcomes"
+          hint="How the assembly will know."
+        >
+          <BriefProse>{body.outcomes}</BriefProse>
+        </BriefSection>
+      ),
+    })
+  if (body.costs.length > 0)
+    sections.push({
+      tag: 'IV',
+      node: (
+        <BriefSection
+          tag="IV"
+          title="Cost breakdown"
+          hint={`${formatAmount(body.totalCost)} USDC`}
+        >
+          <CostLedger costs={body.costs} totalCost={body.totalCost} />
+        </BriefSection>
+      ),
+    })
+  if (body.milestones.length > 0)
+    sections.push({
+      tag: 'V',
+      node: (
+        <BriefSection
+          tag="V"
+          title="Funding milestones"
+          hint="Release schedule."
+        >
+          <Milestones milestones={body.milestones} />
+        </BriefSection>
+      ),
+    })
+  if (body.credentials)
+    sections.push({
+      tag: 'VI',
+      node: (
+        <BriefSection
+          tag="VI"
+          title="Credentials"
+          hint="Prior work cited by the authors."
+        >
+          <BriefProse>{body.credentials}</BriefProse>
+        </BriefSection>
+      ),
+    })
+
+  return (
+    <article className="space-y-12 sm:space-y-14">
+      {sections.map((s) => (
+        <div key={s.tag}>{s.node}</div>
+      ))}
+    </article>
+  )
+}
+
+function BriefSection({
+  tag,
+  title,
+  hint,
+  children,
+}: {
+  tag: string
+  title: string
+  hint?: string
+  children: ReactNode
+}) {
+  return (
+    <section>
+      <SectionHead tag={tag} title={title} hint={hint} />
+      <div className="mt-5">{children}</div>
+    </section>
+  )
+}
+
+// Mirrors the wizard's SectionHead. Local copy keeps this PR scoped; if the
+// pattern grows beyond two routes, extract it into a shared primitive.
+function SectionHead({
+  tag,
+  title,
+  hint,
+}: {
+  tag: string
+  title: string
+  hint?: string
+}) {
+  return (
+    <header className="flex items-end justify-between gap-4">
+      <div className="flex items-end gap-3 sm:gap-4">
+        <span
+          className="inline-flex h-7 min-w-[2.25rem] items-center justify-center px-2 font-mono text-[11px] uppercase tracking-[0.2em] tabular-nums sm:h-8 sm:min-w-[2.5rem]"
+          style={{
+            border: '1.5px solid var(--ink)',
+            color: 'var(--ink)',
+            background: 'color-mix(in oklch, var(--ink) 10%, transparent)',
+          }}
+        >
+          {tag}
+        </span>
+        <h3
+          className="font-display text-[1.5rem] font-[600] leading-none tracking-tight text-foreground sm:text-[1.75rem]"
+          style={{ fontVariationSettings: "'opsz' 144, 'SOFT' 0" }}
+        >
+          {title}
+        </h3>
+      </div>
+      {hint ? (
+        <span className="hidden max-w-[18rem] text-right font-serif text-[12px] italic leading-tight text-muted-foreground sm:inline">
+          {hint}
+        </span>
+      ) : null}
+    </header>
+  )
+}
+
+function BriefProse({ children }: { children: string }) {
+  return (
+    <div
+      className="whitespace-pre-wrap bg-secondary/40 p-4 font-serif text-[15px] leading-relaxed text-foreground sm:p-5 sm:text-[17px]"
+      style={{
+        border:
+          '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/* ============================================================
+ * Cost ledger + milestones + authors (read-only).
+ * ============================================================ */
+
+function CostLedger({
+  costs,
+  totalCost,
+}: {
+  costs: ProposalBody['costs']
+  totalCost: number
+}) {
+  return (
+    <div className="space-y-2">
+      {costs.map((c, i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-1.5 bg-secondary/40 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3 sm:py-2"
+          style={{
+            border:
+              '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+          }}
+        >
+          <span className="min-w-0 flex-1 font-serif text-[15px] text-foreground sm:text-[16px]">
+            {c.item || '—'}
+          </span>
+          <div className="flex items-baseline justify-end gap-3 sm:shrink-0">
+            <span className="w-24 text-right font-mono text-[14px] tabular-nums text-foreground">
+              {c.amount || '0'}
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              USDC
+            </span>
+          </div>
+        </div>
+      ))}
+      <div className="flex items-end justify-end gap-3 py-3">
+        <div className="text-right">
+          <div className="font-mono text-[9px] uppercase tracking-[0.24em] text-muted-foreground">
+            Total
+          </div>
+          <div
+            className="font-display text-2xl tabular-nums sm:text-3xl"
+            style={{
+              color: totalCost > 0 ? 'var(--ink)' : 'inherit',
+              fontVariationSettings: "'opsz' 144, 'SOFT' 0",
+            }}
+          >
+            {formatAmount(totalCost)}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Milestones({
+  milestones,
+}: {
+  milestones: ProposalBody['milestones']
+}) {
+  return (
+    <ol className="space-y-2">
+      {milestones.map((m, i) => (
+        <li
+          key={i}
+          className="space-y-2 bg-secondary/40 px-3 py-3"
+          style={{
+            border:
+              '1px solid color-mix(in oklch, currentColor 16%, transparent)',
+          }}
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="font-mono text-[12px] uppercase tracking-[0.2em] tabular-nums text-foreground">
+              {m.label || `M${i + 1}`}
+            </span>
+            {m.date ? (
+              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                {m.date}
+              </span>
+            ) : null}
+          </div>
+          <div className="font-serif text-[15px] text-foreground sm:text-[16px]">
+            {m.detail || '—'}
+          </div>
+          {m.amount ? (
+            <div className="flex items-baseline justify-end gap-2">
+              <span className="font-mono text-[14px] tabular-nums text-foreground">
+                {m.amount}
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                USDC
+              </span>
+            </div>
+          ) : null}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+/* ============================================================
+ * Helpers (preserved from the original).
+ * ============================================================ */
 
 function BundledVoteDescription({
   claimableCount,
@@ -1153,177 +1811,6 @@ function describeDelegationReason(
     default:
       return null
   }
-}
-
-// ---------- Proposal brief ----------
-
-function ProposalBrief({ body }: { body: ProposalBody }) {
-  const totalLabel = formatAmount(body.totalCost)
-  return (
-    <article className="mb-12 space-y-12">
-      {body.problem ? (
-        <BriefSection n="01" title="Problem statement">
-          <BriefProse>{body.problem}</BriefProse>
-        </BriefSection>
-      ) : null}
-
-      {body.solution ? (
-        <BriefSection n="02" title="Proposed solution">
-          <BriefProse>{body.solution}</BriefProse>
-        </BriefSection>
-      ) : null}
-
-      {body.costs.length > 0 ? (
-        <BriefSection n="03" title="Detailed cost breakdown">
-          <div className="border-t border-border">
-            <div className="grid grid-cols-[1fr_9rem] border-b border-border py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              <span>Item</span>
-              <span className="text-right">Amount · USDC</span>
-            </div>
-            {body.costs.map((c, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[1fr_9rem] border-b border-border py-3"
-              >
-                <span className="pr-4 font-serif text-[15px] text-foreground">
-                  {c.item || '—'}
-                </span>
-                <span className="text-right font-mono text-[14px] tabular-nums text-foreground">
-                  {c.amount || '0'}
-                </span>
-              </div>
-            ))}
-            <div className="grid grid-cols-[1fr_9rem] py-3">
-              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                Total
-              </span>
-              <span className="text-right font-mono text-lg tabular-nums text-foreground">
-                {totalLabel}
-              </span>
-            </div>
-          </div>
-        </BriefSection>
-      ) : null}
-
-      {body.outcomes ? (
-        <BriefSection n="04" title="Expected community outcomes">
-          <BriefProse>{body.outcomes}</BriefProse>
-        </BriefSection>
-      ) : null}
-
-      {body.milestones.length > 0 ? (
-        <BriefSection n="05" title="Funding timeline">
-          <ol className="border-t border-border">
-            {body.milestones.map((m, i) => (
-              <li
-                key={i}
-                className="grid grid-cols-[3rem_minmax(0,1fr)_9rem] items-start gap-4 border-b border-border py-4"
-              >
-                <span className="font-mono text-[12px] uppercase tracking-[0.18em] tabular-nums text-foreground">
-                  {m.label || `M${i + 1}`}
-                </span>
-                <div className="min-w-0">
-                  <div className="font-serif text-[15px] text-foreground">
-                    {m.detail || '—'}
-                  </div>
-                  {m.date ? (
-                    <div className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                      {m.date}
-                    </div>
-                  ) : null}
-                </div>
-                <span className="text-right font-mono text-[14px] tabular-nums text-foreground">
-                  {m.amount ? `${m.amount}` : '—'}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </BriefSection>
-      ) : null}
-
-      <BriefSection n="06" title="Authors">
-        <ul className="border-t border-border">
-          <BriefAuthor address={body.authors.lead} role="lead" />
-          {body.authors.coAuthors.map((a) => (
-            <BriefAuthor key={a} address={a} role="co" />
-          ))}
-        </ul>
-        {body.credentials ? (
-          <div className="mt-6">
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Credentials
-            </div>
-            <BriefProse>{body.credentials}</BriefProse>
-          </div>
-        ) : null}
-      </BriefSection>
-    </article>
-  )
-}
-
-function BriefSection({
-  n,
-  title,
-  children,
-}: {
-  n: string
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section>
-      <div className="mb-5 flex items-baseline gap-4 border-b border-border pb-3">
-        <span className="font-mono text-[11px] uppercase tracking-[0.2em] tabular-nums text-foreground">
-          §&nbsp;{n}
-        </span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
-          {title}
-        </span>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function BriefProse({ children }: { children: string }) {
-  return (
-    <div className="whitespace-pre-wrap border-l-2 border-foreground/10 pl-5 font-serif text-[17px] leading-relaxed text-foreground/90">
-      {children}
-    </div>
-  )
-}
-
-function BriefAuthor({
-  address,
-  role,
-}: {
-  address: Address
-  role: 'lead' | 'co'
-}) {
-  const { data: name } = useIdentity(address)
-  return (
-    <li className="border-b border-border">
-      <Link
-        to="/members/$address"
-        params={{ address }}
-        className="flex items-center justify-between gap-4 py-3 transition-colors hover:bg-accent/40"
-      >
-        <div className="flex items-baseline gap-3 min-w-0">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            {role === 'lead' ? 'Lead' : 'Co'}
-          </span>
-          <span className="truncate font-serif text-[16px] text-foreground">
-            {name ?? truncateAddress(address)}
-          </span>
-          {name ? (
-            <span className="truncate font-mono text-[11px] text-muted-foreground">
-              {truncateAddress(address)}
-            </span>
-          ) : null}
-        </div>
-      </Link>
-    </li>
-  )
 }
 
 function formatAmount(n: number) {

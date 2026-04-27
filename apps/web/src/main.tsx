@@ -10,6 +10,17 @@ import { getContext } from './integrations/tanstack-query/root-provider'
 import { wagmiConfig } from './lib/wagmi'
 import './styles.css'
 
+// JSON.stringify can't serialize BigInt — react-query / router devtools and
+// any incidental console.log of wagmi args (proposal IDs, block numbers,
+// vote handles) would throw `TypeError: Do not know how to serialize a
+// BigInt` and crash the render. Coerce to a decimal string so anything that
+// passes through JSON sees a serializable value.
+//
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(BigInt.prototype as any).toJSON = function () {
+  return this.toString()
+}
+
 // Inline theme init: run before React mounts to avoid a flash of the wrong theme.
 try {
   const stored = localStorage.getItem('theme')
