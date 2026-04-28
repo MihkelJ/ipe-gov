@@ -3,10 +3,10 @@
 
 export const addresses = {
   sepolia: {
-    governor: "0xA7B0AB0574F9d7cF3eA31C0e49E6CAA2BB442d27",
+    governor: "0x6Aa59C5Ef399FE82937f69185a26658578CcCDb0",
     lock: "0x03ee8b0e116843810e792ea239ddd212f5139b96",
-    liquidDelegation: "0x8DB9Af5Fe33b605b526F404b38BfDcb36D3F2e98",
-    governorLiquid: "0xd8D642E71f361Fb32f0Dd837d5aF8E5eA00b1645",
+    liquidDelegation: "0x2Cf952e903A47f9Da647f5E04Cf000D18D670aEA",
+    governorLiquid: "0x0Bdf94D63f975D744D4792F5a9d3D6315cc61f83",
   },
   mainnet: {
     nameWrapper: "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401",

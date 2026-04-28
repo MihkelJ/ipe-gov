@@ -14,7 +14,12 @@ export const UnlockConfidentialGovernorLiquidABI = [
       },
       {
         "internalType": "uint256",
-        "name": "votingPeriodBlocks",
+        "name": "minVotingPeriodBlocks",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxVotingPeriodBlocks",
         "type": "uint256"
       }
     ],
@@ -40,6 +45,32 @@ export const UnlockConfidentialGovernorLiquidABI = [
       }
     ],
     "name": "InvalidDelegator",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidVotingBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "supplied",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "min",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "max",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidVotingPeriod",
     "type": "error"
   },
   {
@@ -113,6 +144,24 @@ export const UnlockConfidentialGovernorLiquidABI = [
         "internalType": "string",
         "name": "descriptionCid",
         "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "startBlock",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "endBlock",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "votingPeriodBlocks",
+        "type": "uint256"
       }
     ],
     "name": "ProposalCreated",
@@ -241,7 +290,20 @@ export const UnlockConfidentialGovernorLiquidABI = [
   },
   {
     "inputs": [],
-    "name": "VOTING_PERIOD",
+    "name": "MAX_VOTING_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_VOTING_PERIOD",
     "outputs": [
       {
         "internalType": "uint256",
@@ -474,6 +536,11 @@ export const UnlockConfidentialGovernorLiquidABI = [
         "internalType": "string",
         "name": "descriptionCid",
         "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "votingPeriodBlocks",
+        "type": "uint256"
       }
     ],
     "name": "propose",

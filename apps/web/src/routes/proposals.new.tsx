@@ -2,7 +2,13 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { createContext, useEffect, useMemo, useState, use, type ReactNode } from "react";
 import type { Address, Hex } from "viem";
 import { useAccount, useSignMessage } from "wagmi";
-import { UnlockConfidentialGovernorLiquidABI, addresses } from "@ipe-gov/sdk";
+import {
+  UnlockConfidentialGovernorLiquidABI,
+  addresses,
+  MAX_VOTING_PERIOD_BLOCKS,
+  MIN_VOTING_PERIOD_BLOCKS,
+  SEPOLIA_BLOCK_TIME_SECONDS,
+} from "@ipe-gov/sdk";
 import type { ProposalBody } from "@ipe-gov/ipfs";
 import { useSponsoredWrite } from "../hooks/useSponsoredWrite";
 import { buildPinMessage, hashBody, pinDescription } from "../lib/pinApi";
@@ -38,6 +44,29 @@ function NewProposalGuarded() {
 // <main> element so the rest of the app keeps its monochrome ledger palette.
 const INK = "oklch(0.55 0.18 35)";
 const HEADLINE_MAX = 160;
+
+// Default voting window — 7 days. Stored as hours so the form can mix
+// fractional presets (e.g. 10-minute smoke-test) with multi-day options.
+const DEFAULT_VOTING_DURATION_HOURS = 168;
+
+const VOTING_PRESETS: ReadonlyArray<{ label: string; hours: number; note?: string }> = [
+  { label: "10 min", hours: 10 / 60, note: "smoke test" },
+  { label: "1 day", hours: 24 },
+  { label: "3 days", hours: 72 },
+  { label: "7 days", hours: 168, note: "default" },
+  { label: "14 days", hours: 336 },
+];
+
+function hoursToBlocks(hours: number): number {
+  return Math.round((hours * 3600) / SEPOLIA_BLOCK_TIME_SECONDS);
+}
+
+function blocksToHours(blocks: number): number {
+  return (blocks * SEPOLIA_BLOCK_TIME_SECONDS) / 3600;
+}
+
+const MIN_VOTING_DURATION_HOURS = blocksToHours(MIN_VOTING_PERIOD_BLOCKS);
+const MAX_VOTING_DURATION_HOURS = blocksToHours(MAX_VOTING_PERIOD_BLOCKS);
 
 const PASSAGE: ReadonlyArray<{
   key: Exclude<Phase, "idle" | "error">;
@@ -95,6 +124,7 @@ interface DraftState {
   costs: CostLine[];
   milestones: Milestone[];
   coAuthors: Address[];
+  votingDurationHours: number;
   phase: Phase;
   error: string | null;
   chapterIdx: number;
@@ -119,6 +149,8 @@ interface DraftActions {
   addCoAuthor: (a: Address) => void;
   removeCoAuthor: (a: Address) => void;
 
+  setVotingDurationHours: (h: number) => void;
+
   setDrawerOpen: (open: boolean) => void;
   gotoChapter: (idx: number) => void;
   gotoNext: () => void;
@@ -137,6 +169,8 @@ interface DraftMeta {
   headlineOver: boolean;
   valid: Record<ChapterId, boolean>;
   allValid: boolean;
+  votingDurationBlocks: number;
+  votingDurationValid: boolean;
   isLast: boolean;
   currentChapter: Chapter;
   canAdvance: boolean;
@@ -180,6 +214,7 @@ function DraftProvider({ children }: { children: ReactNode }) {
     { id: newId(), label: "M1", date: "", amount: "", detail: "" },
   ]);
   const [coAuthors, setCoAuthors] = useState<Address[]>([]);
+  const [votingDurationHours, setVotingDurationHours] = useState<number>(DEFAULT_VOTING_DURATION_HOURS);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [chapterIdx, setChapterIdx] = useState(0);
@@ -211,12 +246,18 @@ function DraftProvider({ children }: { children: ReactNode }) {
   const costsValid = filledCostLines.length === 0 || totalCost > 0;
   const timelineRequired = filledCostLines.length > 0;
 
+  const votingDurationBlocks = hoursToBlocks(votingDurationHours);
+  const votingDurationValid =
+    Number.isFinite(votingDurationHours) &&
+    votingDurationBlocks >= MIN_VOTING_PERIOD_BLOCKS &&
+    votingDurationBlocks <= MAX_VOTING_PERIOD_BLOCKS;
+
   const valid: Record<ChapterId, boolean> = {
     motion: headlineTrim.length > 0 && !headlineOver,
     case: problem.trim().length >= 40 && solution.trim().length >= 40 && outcomes.trim().length >= 40,
     ledger: costsValid && (!timelineRequired || filledMilestones.length > 0),
     voices: !!address && isConnected,
-    seal: true,
+    seal: votingDurationValid,
   };
   const allValid = valid.motion && valid.case && valid.ledger && valid.voices && !busy;
 
@@ -272,7 +313,7 @@ function DraftProvider({ children }: { children: ReactNode }) {
         address: addresses.sepolia.governorLiquid as Hex,
         abi: UnlockConfidentialGovernorLiquidABI,
         functionName: "propose",
-        args: [cid],
+        args: [cid, BigInt(votingDurationBlocks)],
       });
 
       setPhase("done");
@@ -316,6 +357,8 @@ function DraftProvider({ children }: { children: ReactNode }) {
     addCoAuthor: (a) => setCoAuthors((xs) => (xs.includes(a) ? xs : [...xs, a])),
     removeCoAuthor: (a) => setCoAuthors((xs) => xs.filter((x) => x !== a)),
 
+    setVotingDurationHours,
+
     setDrawerOpen,
     gotoChapter: (i) => {
       if (busy) return;
@@ -345,6 +388,7 @@ function DraftProvider({ children }: { children: ReactNode }) {
     costs,
     milestones,
     coAuthors,
+    votingDurationHours,
     phase,
     error,
     chapterIdx,
@@ -362,6 +406,8 @@ function DraftProvider({ children }: { children: ReactNode }) {
     headlineOver,
     valid,
     allValid,
+    votingDurationBlocks,
+    votingDurationValid,
     isLast,
     currentChapter,
     canAdvance,
@@ -1207,7 +1253,7 @@ function PickerRow({ address, onAdd }: { address: Address; onAdd: () => void }) 
 function SealFolio() {
   const {
     state: { phase, error },
-    meta: { allValid, isConnected },
+    meta: { allValid, isConnected, votingDurationValid },
   } = useDraft();
 
   const status = error
@@ -1243,7 +1289,17 @@ function SealFolio() {
       </div>
 
       <section className="mt-10">
-        <SectionHead tag="I" title="Passage" hint="Three movements." ok={phase === "done"} />
+        <SectionHead
+          tag="I"
+          title="Voting window"
+          hint="How long does the assembly have to vote?"
+          ok={votingDurationValid}
+        />
+        <VotingDurationPicker />
+      </section>
+
+      <section className="mt-10">
+        <SectionHead tag="II" title="Passage" hint="Three movements." ok={phase === "done"} />
         <ol className="mt-4 divide-y divide-border border-y border-border">
           {PASSAGE.map((step, i) => {
             const state = stepState(phase, step.key);
@@ -1305,8 +1361,91 @@ function SealFolio() {
         On the record, the full brief is pinned to IPFS; only its content identifier is stored on-chain. On gas,
         submission is sponsored — members vote in confidence.
       </p>
+      {!votingDurationValid ? (
+        <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-foreground">
+          Voting window is outside the allowed range — adjust above before filing.
+        </p>
+      ) : null}
     </FolioShell>
   );
+}
+
+function VotingDurationPicker() {
+  const {
+    state: { votingDurationHours },
+    actions: { setVotingDurationHours },
+    meta: { votingDurationBlocks, votingDurationValid },
+  } = useDraft();
+
+  const matchedPreset = VOTING_PRESETS.find((p) => Math.abs(p.hours - votingDurationHours) < 1e-6);
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {VOTING_PRESETS.map((preset) => {
+          const active = matchedPreset?.label === preset.label;
+          return (
+            <button
+              type="button"
+              key={preset.label}
+              onClick={() => setVotingDurationHours(preset.hours)}
+              className={`group inline-flex items-baseline gap-2 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] transition-colors ${
+                active
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+              aria-pressed={active}
+            >
+              <span>{preset.label}</span>
+              {preset.note ? (
+                <span
+                  className={`text-[9px] tracking-[0.16em] ${active ? "text-background/70" : "text-muted-foreground/70"}`}
+                >
+                  {preset.note}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <label className="block">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+          Custom (hours) · {MIN_VOTING_DURATION_HOURS.toFixed(2)}–{Math.round(MAX_VOTING_DURATION_HOURS)}
+        </span>
+        <input
+          type="number"
+          min={MIN_VOTING_DURATION_HOURS}
+          max={MAX_VOTING_DURATION_HOURS}
+          step="0.1"
+          value={Number.isFinite(votingDurationHours) ? votingDurationHours : ""}
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            setVotingDurationHours(Number.isFinite(next) ? next : 0);
+          }}
+          className="mt-1 w-32 border border-border bg-transparent px-2 py-1.5 font-mono text-[13px] tabular-nums text-foreground focus:border-foreground focus:outline-none"
+        />
+      </label>
+
+      <p className="font-serif text-[13px] leading-relaxed text-muted-foreground">
+        {votingDurationValid
+          ? `Voting closes ~${formatVotingHours(votingDurationHours)} after submission (${votingDurationBlocks.toLocaleString()} blocks at ${SEPOLIA_BLOCK_TIME_SECONDS}s each).`
+          : `Voting window must be between ${MIN_VOTING_DURATION_HOURS.toFixed(2)} and ${Math.round(MAX_VOTING_DURATION_HOURS)} hours.`}
+      </p>
+    </div>
+  );
+}
+
+function formatVotingHours(hours: number): string {
+  if (hours < 1) {
+    const minutes = Math.round(hours * 60);
+    return `${minutes} min`;
+  }
+  if (hours < 24) {
+    return `${Math.round(hours)} h`;
+  }
+  const days = hours / 24;
+  return `${days % 1 === 0 ? days.toFixed(0) : days.toFixed(1)} days`;
 }
 
 /* ============================================================
@@ -1316,8 +1455,8 @@ function SealFolio() {
 
 function CoverDossier() {
   const {
-    state: { phase, coAuthors },
-    meta: { headlineTrim, totalCost, filledMilestonesCount, address },
+    state: { phase, coAuthors, votingDurationHours },
+    meta: { headlineTrim, totalCost, filledMilestonesCount, address, votingDurationValid },
   } = useDraft();
   const filed = phase === "done";
 
@@ -1378,6 +1517,7 @@ function CoverDossier() {
         <DossierRow label="Budget" value={totalCost > 0 ? `${formatAmount(totalCost)} USDC` : "—"} />
         <DossierRow label="Milestones" value={filledMilestonesCount ? String(filledMilestonesCount) : "—"} />
         <DossierRow label="Authors" value={String(1 + coAuthors.length)} />
+        <DossierRow label="Voting" value={votingDurationValid ? formatVotingHours(votingDurationHours) : "—"} />
         <DossierRow label="Moved by" value={address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "—"} />
       </div>
     </div>
