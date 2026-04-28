@@ -9,6 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "export-abi": "ts-node scripts/exportAbi.ts",
     "register-schemas:sepolia": "hardhat run --network sepolia scripts/registerSchemas.ts"
   },
   "dependencies": {

@@ -3,6 +3,8 @@ import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatUnits, getAddress, isAddress, type Hex } from "viem";
 import { ENS_PARENT_NAME, tokens } from "@ipe-gov/sdk";
+import { AdminAttestPanel } from "#/components/AdminAttestPanel";
+import { ResidencyBadge } from "#/components/ResidencyBadge";
 import RequireUnlockMembership from "#/components/RequireUnlockMembership";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
@@ -160,8 +162,9 @@ function IdentityHero({
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="md:hidden">
+          <div className="flex flex-wrap items-center gap-2 md:hidden">
             <StatusBadge status={status} />
+            <ResidencyBadge address={address} />
           </div>
         </div>
 
@@ -183,11 +186,13 @@ function IdentityHero({
 
           <div className="hidden flex-wrap items-center gap-2 md:flex">
             <StatusBadge status={status} />
+            <ResidencyBadge address={address} />
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 md:flex-col md:items-stretch md:justify-self-end">
           <CopyButton value={address} label="Copy address" />
+          <AdminAttestPanel recipient={address} />
         </div>
       </CardContent>
     </Card>
