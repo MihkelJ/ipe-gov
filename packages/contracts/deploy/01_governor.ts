@@ -47,6 +47,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   const votingPeriod = process.env.VOTING_PERIOD_BLOCKS ?? "7200";
+  // Per-proposal voting bounds for the Liquid governor. Defaults: 50 blocks
+  // (~10 min on Sepolia at 12 s/block) ↔ 216_000 blocks (~30 days).
+  const minVotingPeriod = process.env.MIN_VOTING_PERIOD_BLOCKS ?? "50";
+  const maxVotingPeriod = process.env.MAX_VOTING_PERIOD_BLOCKS ?? "216000";
 
   const governor = await deploy("UnlockConfidentialGovernor", {
     from: deployer,
@@ -75,14 +79,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const governorLiquid = await deploy("UnlockConfidentialGovernorLiquid", {
     from: deployer,
-    args: [lockAddress, delegation.address, votingPeriod],
+    args: [lockAddress, delegation.address, minVotingPeriod, maxVotingPeriod],
     log: true,
     skipIfAlreadyDeployed: false,
   });
 
   console.log(
     `UnlockConfidentialGovernorLiquid: ${governorLiquid.address} ` +
-      `(lock: ${lockAddress}, delegation: ${delegation.address}, votingPeriod: ${votingPeriod} blocks)`,
+      `(lock: ${lockAddress}, delegation: ${delegation.address}, ` +
+      `minVotingPeriod: ${minVotingPeriod} blocks, maxVotingPeriod: ${maxVotingPeriod} blocks)`,
   );
 
   syncSdkAddresses(hre.network.name, {

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useBlockNumber } from "wagmi";
+import { SEPOLIA_BLOCK_TIME_SECONDS } from "@ipe-gov/sdk";
 
-const SEPOLIA_BLOCK_TIME = 12;
+const SEPOLIA_BLOCK_TIME = SEPOLIA_BLOCK_TIME_SECONDS;
 
 /** Seconds remaining until `endBlock` based on Sepolia's ~12s-per-block pace.
  *  Smooth-ticks every second locally and resyncs whenever a new block lands,

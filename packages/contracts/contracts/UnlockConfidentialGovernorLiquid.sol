@@ -18,8 +18,10 @@ contract UnlockConfidentialGovernorLiquid is ZamaEthereumConfig {
     IPublicLockV15 public immutable LOCK;
     /// @notice Delegation registry used to resolve delegator chains.
     LiquidDelegation public immutable DELEGATION;
-    /// @notice Number of blocks a proposal remains open for voting.
-    uint256 public immutable VOTING_PERIOD;
+    /// @notice Minimum number of blocks a proposal may stay open for voting.
+    uint256 public immutable MIN_VOTING_PERIOD;
+    /// @notice Maximum number of blocks a proposal may stay open for voting.
+    uint256 public immutable MAX_VOTING_PERIOD;
 
     /// @notice Upper bound on delegators claimable per `castVoteAsDelegate`
     /// call. Keeps gas predictable; delegates with more transitive followers
@@ -60,7 +62,17 @@ contract UnlockConfidentialGovernorLiquid is ZamaEthereumConfig {
     /// @param id The proposal id.
     /// @param proposer The member that created the proposal.
     /// @param descriptionCid IPFS CID of the pinned proposal description.
-    event ProposalCreated(uint256 indexed id, address indexed proposer, string descriptionCid);
+    /// @param startBlock Block at which voting opened (inclusive).
+    /// @param endBlock Block at which voting closes (inclusive).
+    /// @param votingPeriodBlocks Per-proposal voting window chosen by the proposer.
+    event ProposalCreated(
+        uint256 indexed id,
+        address indexed proposer,
+        string descriptionCid,
+        uint256 startBlock,
+        uint256 endBlock,
+        uint256 votingPeriodBlocks
+    );
 
     /// @notice Emitted when a member casts a (still-encrypted) vote.
     /// @param id The proposal id.
@@ -107,6 +119,13 @@ contract UnlockConfidentialGovernorLiquid is ZamaEthereumConfig {
     /// this governor's lock — the two must agree or membership checks
     /// between validation (governor) and delegation (registry) diverge.
     error LockMismatch();
+    /// @notice The supplied voting period was outside the configured bounds.
+    /// @param supplied Voting period (blocks) the proposer requested.
+    /// @param min Minimum allowed voting period.
+    /// @param max Maximum allowed voting period.
+    error InvalidVotingPeriod(uint256 supplied, uint256 min, uint256 max);
+    /// @notice Constructor was called with min == 0 or min > max.
+    error InvalidVotingBounds();
 
     modifier onlyMember() {
         if (!LOCK.getHasValidKey(msg.sender)) revert NotMember();
@@ -116,11 +135,21 @@ contract UnlockConfidentialGovernorLiquid is ZamaEthereumConfig {
     /// @notice Deploys the governor bound to a specific lock and delegation contract.
     /// @param lockAddress Address of the Unlock Protocol lock granting membership.
     /// @param delegationAddress Address of the `LiquidDelegation` registry.
-    /// @param votingPeriodBlocks Number of blocks each proposal stays open.
-    constructor(address lockAddress, address delegationAddress, uint256 votingPeriodBlocks) {
+    /// @param minVotingPeriodBlocks Minimum per-proposal voting window (in blocks).
+    /// @param maxVotingPeriodBlocks Maximum per-proposal voting window (in blocks).
+    constructor(
+        address lockAddress,
+        address delegationAddress,
+        uint256 minVotingPeriodBlocks,
+        uint256 maxVotingPeriodBlocks
+    ) {
+        if (minVotingPeriodBlocks == 0 || minVotingPeriodBlocks > maxVotingPeriodBlocks) {
+            revert InvalidVotingBounds();
+        }
         LOCK = IPublicLockV15(lockAddress);
         DELEGATION = LiquidDelegation(delegationAddress);
-        VOTING_PERIOD = votingPeriodBlocks;
+        MIN_VOTING_PERIOD = minVotingPeriodBlocks;
+        MAX_VOTING_PERIOD = maxVotingPeriodBlocks;
         if (address(DELEGATION.LOCK()) != lockAddress) revert LockMismatch();
     }
 
@@ -135,13 +164,22 @@ contract UnlockConfidentialGovernorLiquid is ZamaEthereumConfig {
 
     /// @notice Creates a new proposal. Caller must hold a valid Unlock key.
     /// @param descriptionCid IPFS CID of the pinned proposal description JSON.
+    /// @param votingPeriodBlocks Number of blocks the proposal stays open. Must
+    /// fall in `[MIN_VOTING_PERIOD, MAX_VOTING_PERIOD]`.
     /// @return id The id of the newly created proposal.
-    function propose(string calldata descriptionCid) external onlyMember returns (uint256 id) {
+    function propose(
+        string calldata descriptionCid,
+        uint256 votingPeriodBlocks
+    ) external onlyMember returns (uint256 id) {
+        if (votingPeriodBlocks < MIN_VOTING_PERIOD || votingPeriodBlocks > MAX_VOTING_PERIOD) {
+            revert InvalidVotingPeriod(votingPeriodBlocks, MIN_VOTING_PERIOD, MAX_VOTING_PERIOD);
+        }
+
         id = ++proposalCount;
         Proposal storage p = _proposals[id];
         p.proposer = msg.sender;
         p.startBlock = block.number;
-        p.endBlock = block.number + VOTING_PERIOD;
+        p.endBlock = block.number + votingPeriodBlocks;
         p.forVotes = FHE.asEuint32(0);
         p.againstVotes = FHE.asEuint32(0);
         p.abstainVotes = FHE.asEuint32(0);
@@ -151,7 +189,7 @@ contract UnlockConfidentialGovernorLiquid is ZamaEthereumConfig {
         FHE.allowThis(p.againstVotes);
         FHE.allowThis(p.abstainVotes);
 
-        emit ProposalCreated(id, msg.sender, descriptionCid);
+        emit ProposalCreated(id, msg.sender, descriptionCid, p.startBlock, p.endBlock, votingPeriodBlocks);
     }
 
     /// @notice Cast a direct vote. If the caller was previously credited via
