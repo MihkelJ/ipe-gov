@@ -7,7 +7,7 @@ import { useAllMembers, type MemberKey } from "#/hooks/useMembers";
 import { useMemberBalances } from "#/hooks/useMemberBalances";
 import { tokens } from "@ipe-gov/sdk";
 import { AddressIdentity } from "#/components/AddressIdentity";
-import { useClaimedSubnames } from "#/hooks/useIdentity";
+import { useClaimedSubnames, useIpecitySubnames } from "#/hooks/useIdentity";
 import { Input } from "#/components/ui/input";
 import { Button } from "#/components/ui/button";
 import { Badge } from "#/components/ui/badge";
@@ -48,7 +48,8 @@ const THIRTY_DAYS = 60n * 60n * 24n * 30n;
 function Members() {
   const { data: members = [], isLoading, error, refetch } = useAllMembers();
   const total = members.length;
-  const { data: subnames } = useClaimedSubnames();
+  const { data: claimedSubnames } = useClaimedSubnames();
+  const { data: ipecitySubnames } = useIpecitySubnames();
   const { balances, isLoading: balancesLoading } = useMemberBalances(members);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -61,8 +62,18 @@ function Members() {
     const filtered = members.filter((m) => {
       if (query.length > 0) {
         const addr = m.owner.toLowerCase();
-        const name = subnames?.get(addr)?.toLowerCase();
-        if (!addr.includes(query) && !name?.includes(query)) return false;
+        // Search across both name sources `useIdentity` falls through to —
+        // L2 govdemo subnames AND legacy *.ipecity.eth wrapped subnames.
+        // Without the second source, a member whose dossier shows
+        // `alice.ipecity.eth` is invisible to a search for "alice", which
+        // reads as "the person isn't on this page" even though they're in
+        // the list. Mainnet ENS reverse names aren't indexed yet — that's
+        // an N-RPC fetch we haven't taken on.
+        const claimed = claimedSubnames?.get(addr)?.toLowerCase();
+        const ipecity = ipecitySubnames?.get(addr)?.toLowerCase();
+        if (!addr.includes(query) && !claimed?.includes(query) && !ipecity?.includes(query)) {
+          return false;
+        }
       }
       if (filter === "expiring") {
         if (m.expiration >= NEVER_THRESHOLD) return false;
@@ -83,7 +94,7 @@ function Members() {
       if (ba === bb) return Number(BigInt(a.tokenId) - BigInt(b.tokenId));
       return bb > ba ? 1 : -1;
     });
-  }, [members, subnames, q, filter, nowSec, balances]);
+  }, [members, claimedSubnames, ipecitySubnames, q, filter, nowSec, balances]);
 
   const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
