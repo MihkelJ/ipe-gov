@@ -12,6 +12,7 @@ import {
   Database,
   Network,
   ShieldCheck,
+  Stamp,
 } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { Separator } from "#/components/ui/separator";
@@ -209,7 +210,7 @@ function Home() {
       {/* Protocol stack — specimen sheet */}
       <section className="border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-          <SectionHeading kicker="Specimen sheet · what holds it up" title="Nine protocols, working in concert." />
+          <SectionHeading kicker="Specimen sheet · what holds it up" title="Ten protocols, working in concert." />
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
             None of this is bespoke cryptography. Ipê stitches together audited, public-good primitives — each one
             chosen for what it refuses to leak, who it lets in, and how cheaply it lets people participate.
@@ -282,6 +283,14 @@ function Home() {
             />
             <Spec
               n="09"
+              icon={<Stamp className="size-4" />}
+              name="Ethereum Attestation Service"
+              tag="Provenance · on-chain attestations"
+              body="Residency, check-ins, roles, project launches, and skills are issued as EAS attestations against published Ipê schemas — revocable, queryable, and portable across apps."
+              foot="attest.org · @ipe-gov/eas"
+            />
+            <Spec
+              n="10"
               icon={<Network className="size-4" />}
               name="Sepolia"
               tag="Chain · testnet pilot"
