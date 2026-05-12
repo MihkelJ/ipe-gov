@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "compile": "turbo run compile",
-    "deploy:sepolia": "turbo run deploy:sepolia"
+    "deploy:sepolia": "turbo run deploy:sepolia",
+    "new-app": "node scripts/new-app.mjs"
   },
   "devDependencies": {
     "prettier": "^3.8.3",
