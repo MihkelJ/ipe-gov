@@ -196,6 +196,10 @@ integrate any of it independently:
   verification, error shapes) for the worker pattern.
 - **`apps/web`** — Reference frontend (Vite + TanStack Router + Privy +
   wagmi). Encrypts ballots client-side with the FHEVM SDK.
+- **`apps/starter`** — Minimal fork-ready dApp template on the same stack as
+  `apps/web`. Blank canvas with Privy + wagmi + the Sepolia membership gate
+  pre-wired. Clone the whole monorepo to get it alongside every reference app
+  and shared package — `git clone https://github.com/MihkelJ/ipe-gov.git`.
 - **`apps/pin-api`** — Worker that signature-gates IPFS pinning.
 - **`apps/paymaster-proxy`** — Worker that gates ERC-4337 sponsorship by
   Unlock key + chain-aware RPC proxy.
@@ -231,6 +235,7 @@ schema UIDs so the public services above are a `npm install` away.
 ipe-gov/
 ├── apps/
 │   ├── web/               # Vite + TanStack Router frontend (Cloudflare Pages)
+│   ├── starter/           # Minimal fork-ready dApp template on the same stack
 │   ├── pin-api/           # Worker: signature-gated IPFS pinning
 │   ├── paymaster-proxy/   # Worker: ERC-7677 paymaster + chain-aware RPC proxy
 │   └── ens-api/           # Worker: wrapped ENS subname issuance
